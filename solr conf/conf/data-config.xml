@@ -1,0 +1,2856 @@
+<dataConfig>
+  <script>  
+		<![CDATA[
+    
+       /*var row =  {};
+      row['producents_data'] = "person;--;;--;Cornelis Cornelisz. van Haarlem;--;1562;--;1562;--;1562;--;1638;--;1638;--;1638;--;Hollandsk;-;person;--;skole;--;Francis Picabia;--;1879;--;1879;--;1879;--;1953;--;1953;--;1953;--;Fransk;-;person;--;trykker;--;Charles Alexandre Picart le Doux;--;1881;--;1881;--;1881;--;1959;--;1959;--;1959;--;Fransk;-;person;--;efter forl_g af;--;Pablo Picasso;--;1881;--;1881;--;1881;--;1973;--;1973;--;1973;--;Spansk;-;person;--;skole;--;Benedetto Carpaccio;--;1501;--;Ca. 1500;--;About 1500;--;1572;--;1572;--;1572;--;Italiensk;-;person;--;forfatter/redakt_r;--;Hendri Ambrosius Pacx;--;1605;--;Ca. 1603;--;About 1603;--;1678;--;Efter 1658;--;After 1658;--;Hollandsk;-;person;--;udgiver;--;Antonio Circignano;--;1571;--;Ca. 1570;--;About 1570;--;1631;--;Ca. 1630;--;About 1630;--;Italiensk;-;person;--;stil;--;Vittore Carpaccio;--;1461;--;Ca. 1460;--;About 1460;--;1527;--;Ca. 1526;--;About 1526;--;Italiensk;-;orga;--;;--;Ara Pacis;--;(?);--;(?);--;(?);--;(?);--;(?);--;;--;(?);-;orga;--;trykker;--;Edition Copenhagen;--;(?);--;(?);--;(?);--;(?);--;(?);--;;--;(?);-;orga;--;;--;Galerie Edition Copenhagen;--;(?);--;(?);--;(?);--;(?);--;(?);--;;--;(?);-;orga;--;udgiver;--;Centre Culturel du Marais, Paris;--;(?);--;(?);--;(?);--;(?);--;(?);--;;--;(?)";      
+      
+      var fdas = process_producents(row);*/
+      
+      var split_1_niv = new String(';-;');
+      var split_2_niv = new String(';--;');
+      var split_3_niv = new String(';---;');
+      var split_4_niv = new String(';-v;');
+      
+      function codepoints(str) {
+        if (str === undefined)
+          return '';
+          
+        var res = [];
+      	for(var i = 0; i < str.length; i++) {
+          var chr =  str.substr(i, 1);
+          var codepoint = str.charCodeAt(i);
+          res.push((codepoint >= 33 && codepoint <= 126) ?
+            chr :
+            "U+" + codepoint.toString(16).toUpperCase());      		
+      	};
+      	return res.join('').replace(/"/g, '');
+      };
+
+      
+      if (!String.format) {
+      	String.format = function(format) {
+      		var args = Array.prototype.slice.call(arguments, 1);
+      		return format.replace(/{(\d+)}/g, function(match, number) { 
+      			return typeof args[number] != 'undefined'
+      				? args[number] 
+      			: match
+      			;
+      		});
+      	};
+      };
+      
+      if (!String.capitalize) {
+      	String.capitalize = function(capitalize ) {
+      		var args = Array.prototype.slice.call(arguments, 0);      		
+      		return (isValidDataText(args.toString())) ? args.toString().charAt(0).toUpperCase() + args.toString().slice(1) : '';      		
+      	};
+      };			 
+      
+      function isValidDataText(text, field){
+        if (text === undefined || text == null)
+          return false;
+        
+        var field_expr = field === undefined ? 'defaut' : field;
+        text = text.toLowerCase();
+        
+        switch(field_expr) {
+          case 'role':
+              if(text == 'undefined'
+                || text == 'null' 
+                || text == ''
+                || text == 'original')
+                return false
+              break;              
+          case 'agent':
+              if(text == 'undefined'
+                || text == 'null' 
+                || text == ''
+                || text == 'unknown')
+                return false
+              break;
+          case 'date':
+              if(text == 'undefined'
+                || text == 'null' 
+                || text == ''
+                || text == '(?)')
+                return false
+              break;
+          case 'orga_place':
+              if(text == 'undefined'
+                || text == 'null' 
+                || text == ''
+                || text == '(?)')
+                return false
+              break;
+          default:
+              if(text == 'undefined' 
+                || text == 'null'
+                || text == '')
+                return false;
+        } 
+  
+        return true;
+      
+      };       
+            
+      /**
+       * Return true if $data matches a person, not an organisation  
+       **/
+      function isPersonData(personArray, type){          
+          switch(type) {
+	          case 'producent':
+	              if (personArray !== undefined 
+	                && personArray.length > 0
+	                && new String(personArray[0]) == 'person')
+	                  return true; 
+	              break;       
+	          default:
+	              return false;
+          }
+          
+          return false;
+      };                 
+      
+      /**
+       * Process fields that must be capitalized
+       **/       
+       function process_capitalize(row) {
+        var acq_method = row.get("acq_method");
+        var acq_source = row.get("acq_source");                  
+        
+        if (isValidDataText(acq_method))
+        	row.put("acq_method", String.capitalize(acq_method));
+        
+        if (isValidDataText(acq_source))
+        	row.put("acq_source", String.capitalize(acq_source));
+                        
+        return row;
+       
+       };
+      
+      
+      /**
+       * Process Acquisitions
+       **/       
+       function process_acquisition(row) {
+        var acq_method = (row.get("acq_method"));
+        var acq_source = (row.get("acq_source"));        
+        var acq_date = (row.get("acq_date")); 
+        var acq_date_eng = (row.get("acq_date_eng"));         
+        
+        var acq_for_skilt = isValidDataText(acq_source) || isValidDataText(acq_source) || isValidDataText(acq_date) ?
+	        	String.format(';<1-;{0}{1}{2};-1>;{3}',
+		        	isValidDataText(acq_method) ? String.format('{0}', acq_method) : '',
+		        	isValidDataText(acq_source) ? String.format(' {0}', acq_source) : '',
+		        	isValidDataText(acq_date) ? String.format(' {0}', acq_date) : '',
+		        	isValidDataText(acq_date_eng) ? String.format(' / Acquired {0}', acq_date_eng) : ''
+		         )
+		     :
+		     	'';  
+		     	
+		var acq_for_ext = isValidDataText(acq_source) || isValidDataText(acq_source) || isValidDataText(acq_date) ?
+	        	String.format('{0}{1}{2}',
+		        	isValidDataText(acq_method) ? String.format('{0}', acq_method) : '',
+		        	isValidDataText(acq_date) ? String.format(' ({0})', acq_date) : '',
+		        	isValidDataText(acq_source) ? String.format(', {0}', acq_source) : ''
+		         )
+		     :
+		     	'';  	        
+        
+        if (isValidDataText(acq_for_skilt))
+        	row.put("acq_for_skilt", acq_for_skilt);
+        	
+       	if (isValidDataText(acq_for_ext))
+        	row.put("acq_for_ext", acq_for_ext);
+                        
+        return row;
+       
+       };
+       
+       
+      /**
+       * Process Mutliple Works
+       **/       
+       function process_multi_works(row) {
+        var multi_works_split = new String(row.get("multi_work_ref")).split(split_1_niv); 
+        var multi_works_data = [];    				
+      	var arrayLength = multi_works_split.length;
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = multi_works_split[i].split(split_2_niv);
+      		var title = new String(values[0]);          
+      		var ref = new String(values[1]);        
+          var res = (isValidDataText(title)) ? String.format(';<1-;{0};-1>;, {1}', title, ref) : '';
+          if (isValidDataText(title))
+            multi_works_data.push(res);
+        }               
+        
+        row.remove("multi_work_ref");        
+        if (multi_works_data.length > 0)          
+          row.put("multi_work_ref", new String(multi_works_data.join(split_1_niv)));
+                        
+        return row;
+       
+       };
+       
+      /**
+       * Process Related Works
+       **/       
+       function process_related_works(row) {
+        var related_works_split = new String(row.get("related_works_title_dk")).split(split_1_niv); 
+        var related_works_data_titles = [];  
+        var related_works_orig_number;    				
+      	var arrayLength = related_works_split.length;
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = related_works_split[i].split(split_2_niv);
+      		var title = new String(values[0]);          
+      		var objectnumber = new String(values[1]);                  
+          
+          if(isValidDataText(title))
+            related_works_data_titles.push(String.format('{0}, {1}', title, objectnumber));
+          
+          if(objectnumber.indexOf("ORIG") > -1)
+            related_works_orig_number =  objectnumber; 
+          
+        }               
+        
+        row.remove("related_works_title_dk");        
+        
+        if (related_works_data_titles.length > 0)          
+          row.put("related_works_title_dk", new String(related_works_data_titles.join(split_1_niv)));
+        
+        if(isValidDataText(related_works_orig_number))
+          row.put("related_works_orig_number", related_works_orig_number);
+                          
+        return row;
+       
+       }; 
+       
+      /**
+       * Process Techniques
+       **/       
+       function process_techniques(row) {
+        var techniques_split = new String(row.get("prod_technique_all")).split(split_1_niv); 
+        var techniques_data = [];
+        var techniques_data_eng = [];    				
+      	var arrayLength = techniques_split.length;
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = techniques_split[i].split(split_2_niv);
+      		var technique = new String(values[0]);          
+      		var lang = new String(values[1]);        
+          
+          if(lang.indexOf('dansk') > -1)
+            techniques_data.push(technique);
+          
+          if(lang.indexOf('engelsk') > -1)
+            techniques_data_eng.push(technique);
+        }                               
+        
+        row.remove("prod_technique_all");
+        
+        if (techniques_data.length > 0)
+          row.put("prod_technique", String.capitalize(new String(techniques_data.join(split_1_niv))));
+        
+        if (techniques_data_eng.length > 0)
+          row.put("prod_technique_eng",  String.capitalize(new String(techniques_data_eng.join(split_1_niv))));
+        
+        return row;
+       
+       };
+      
+      /**
+       * Process Titles
+       *             */       
+       function process_titles(row) {
+        
+        //* process original titles
+        var titles_split = new String(row.get("title_all")).split(split_1_niv);         
+        var titles_data_all_lang_with_notes = [];  	// list of all titles (whatever language is) with associated notes and translations        
+        var title_data_first = new String();      	// first title in the list (whatever language is)   	
+		var title_dk_with_notes = new String(); 	// first danish title with notes and translations
+		var titles_data_en = [];					// first english translation for the first title			
+      	var arrayLength = titles_split.length;
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = titles_split[i].split(split_2_niv);
+          var title = new String(values[0]);
+          var note = new String(values[1]);
+          var lang = new String(values[2]);
+          var translated = new String(values[3]); 
+          
+          //* process translated titles for all titles
+          var translations_all_lang = [];
+          if(isValidDataText(translated)){
+	           var split_trans = translated.split(split_3_niv); 	           
+	           for (var j = 0; j < split_trans.length; j++) {	
+	           		var lang_trans = split_trans[j].split(split_4_niv)[0];            	
+	           		translations_all_lang.push(lang_trans);          	            
+	           }            
+          }          
+          
+          var title_orig_with_notes = String.format('{0}{1}{2}{1}{3}', title, split_2_niv, note, translations_all_lang.join(split_3_niv));
+          var title_orig = title;
+          
+          if(i == 0){
+          	title_data_first = title_orig_with_notes;
+          	
+	       //* process translated titles FOR THE FIRST TITLE ONLY
+	       var titles_en_split = translated.split(split_3_niv);
+	       	       
+	       for (var j = 0; j < titles_en_split.length; j++) {
+		       	var trans_values = titles_en_split[j].split(split_4_niv);
+				var trans_title = new String(trans_values[0]);
+				var trans_lang = new String(trans_values[1]);
+				
+				if(trans_lang.indexOf('engelsk') > -1)
+					titles_data_en.push(trans_title);          				       
+			}
+          }            
+          
+          if(lang.indexOf('dansk') > -1 && title_dk_with_notes == '' ){
+            title_dk_with_notes = title_orig_with_notes;   							// first danish title with notes and translations                    
+          }
+          
+          titles_data_all_lang_with_notes.push(title_orig_with_notes);
+        } 
+                
+        //* copy data back into solr's fields
+        row.put("title_first", title_data_first.split(split_2_niv)[0]);             // first title in the list (whatever language is)
+        row.put("title_first_with_note", title_data_first);                        	// first title in the list with notes and translations (whatever language is)         
+        
+        if (isValidDataText(title_dk_with_notes)){
+          row.put("title_dk", title_dk_with_notes.split(split_2_niv)[0]);  			// first danish title
+          row.put("title_dk_with_note", title_dk_with_notes);              			// first danish title with notes and translations                   
+        } 
+
+        if (titles_data_all_lang_with_notes.length > 1){    // if there are some alternatives titles...
+          // ...create a json object that contains a list of all alternative titles with their notes          
+          var arr = new java.util.ArrayList();
+          titles_data_all_lang_with_notes.shift();                                        // keep only the alternative titles with their notes and translations 
+          for (var i = 0; i < titles_data_all_lang_with_notes.length; i++) {
+            var sub_data = titles_data_all_lang_with_notes[i].split(split_2_niv);
+            var title = sub_data[0];
+            var note = sub_data.length > 1 ? sub_data[1] : '';
+            var translations = sub_data.length > 2 ? sub_data[2] : '';                                    
+            var mapper = new org.codehaus.jackson.map.ObjectMapper();
+            var rootNode = mapper.createObjectNode();
+            if (isValidDataText(title))
+              rootNode.put('title', title);
+            if (isValidDataText(note))
+              rootNode.put('note', note); 
+            if (isValidDataText(translations))
+              rootNode.put('translations', translations);            
+            arr.add(rootNode.toString());
+          }          
+          row.put("titles_alt_with_notes", arr);                                 // all alternative titles with their notes and translations                     
+        }
+        
+        if (titles_data_en.length > 0) 
+          row.put("title_eng", titles_data_en[0]);                                  // first english title for the first title
+        
+        row.remove("title_all");
+        row.remove("title_translate");
+        
+        return row;
+       
+       };
+
+      /**
+       * Process Producents
+       **/       
+       function process_producents(row) {
+        var producents_split = new String(row.get("producents_data")).split(split_1_niv);         
+        
+        var producents_data = [];      				
+      	var arrayLength = producents_split.length;
+        
+        var artists_data_short = [];
+        var artists_data_short_w_role = [];
+        var artists_data_collectionspace = []; 
+        var artists_data_for_skilt = []; 
+        var artists_data_collectionspace_catalog_ext_litt = [];
+        var all_artists_data = {artists_data_collectionspace: artists_data_collectionspace,
+        					artists_data_for_skilt:artists_data_for_skilt,
+                            artists_data_collectionspace_catalog_ext_litt: artists_data_collectionspace_catalog_ext_litt,
+                            artists_data_short:artists_data_short,
+                            artists_data_short_w_role:artists_data_short_w_role };
+                            
+        var printers_data_collectionspace = []; 
+        var printers_data_collectionspace_catalog_ext_litt = [];
+        var all_printers_data = {printers_data_collectionspace: printers_data_collectionspace,
+                            printers_data_collectionspace_catalog_ext_litt: printers_data_collectionspace_catalog_ext_litt };                            
+        
+        var editors_data_collectionspace = []; 
+        var editors_data_collectionspace_catalog_ext_litt = [];
+        var all_editors_data = {editors_data_collectionspace: editors_data_collectionspace,
+                            editors_data_collectionspace_catalog_ext_litt: editors_data_collectionspace_catalog_ext_litt };                            
+
+        var forfatters_data = []; 
+        var all_forfatters_data = {forfatters_data: forfatters_data};                            
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = producents_split[i].split(split_2_niv);
+      		var producent_type = values[1];          
+          
+          switch(codepoints(producent_type)) {
+            case 'trykker':
+                concat_printers_data(values, all_printers_data, row);
+                break;
+                
+            case 'udgiver':                
+                concat_editors_data(values, all_editors_data, row);
+                break;
+                
+            case 'forfatter/redaktU+F8r':
+                concat_forfatters_data(values, all_forfatters_data);                                                
+                break;
+            
+            default:                
+                concat_artists_data(values, all_artists_data);                                 
+          } 
+        }                                                                                                        
+                
+        if (all_artists_data.artists_data_for_skilt.length > 0){    
+          // create a json object that contains a list of all artist with their data          
+          var arr = new java.util.ArrayList();
+          
+          for (var i = 0; i < all_artists_data.artists_data_for_skilt.length; i++) {
+            var sub_data = all_artists_data.artists_data_for_skilt[i].split(split_2_niv);
+            var name = sub_data[0];
+            var data = sub_data.length > 0 ? sub_data[1] : '';
+            var mapper = new org.codehaus.jackson.map.ObjectMapper();
+            var rootNode = mapper.createObjectNode();
+            if (isValidDataText(name))
+              rootNode.put('name', name);
+            if (isValidDataText(data))
+              rootNode.put('data', data);            
+            arr.add(rootNode.toString());
+          }          
+          row.put("artists_data_for_skilt", arr);                              
+        }
+                                                                                                            
+        if (all_artists_data.artists_data_short.length > 0)        
+          row.put("artists_data_short", new String(all_artists_data.artists_data_short.join(split_1_niv)));
+        
+        if (all_artists_data.artists_data_short_w_role.length > 0)        
+          row.put("artists_data_short_w_role", new String(all_artists_data.artists_data_short_w_role.join(split_1_niv)));
+          
+        if (all_artists_data.artists_data_collectionspace.length > 0)        
+          row.put("artists_data_collectionspace", new String(all_artists_data.artists_data_collectionspace.join(split_1_niv))); 
+          
+      	if (all_artists_data.artists_data_collectionspace_catalog_ext_litt.length > 0)
+          row.put("artists_data_collectionspace_catalog_ext_litt", new String(all_artists_data.artists_data_collectionspace_catalog_ext_litt.join(split_1_niv))); 
+        
+        if (all_printers_data.printers_data_collectionspace.length > 0) 
+          row.put("printers_data_collectionspace", new String(all_printers_data.printers_data_collectionspace.join(split_1_niv))); 
+      	if (all_printers_data.printers_data_collectionspace_catalog_ext_litt.length > 0)
+          row.put("printers_data_collectionspace_catalog_ext_litt", new String(all_printers_data.printers_data_collectionspace_catalog_ext_litt.join(split_1_niv))); 
+
+        if (all_editors_data.editors_data_collectionspace.length > 0)
+          row.put("editors_data_collectionspace", new String(all_editors_data.editors_data_collectionspace.join(split_1_niv))); 
+      	if (all_editors_data.editors_data_collectionspace_catalog_ext_litt.length > 0)
+          row.put("editors_data_collectionspace_catalog_ext_litt", new String(all_editors_data.editors_data_collectionspace_catalog_ext_litt.join(split_1_niv))); 
+        
+        if (all_forfatters_data.forfatters_data.length > 0)
+          row.put("forfatters_data", new String(all_forfatters_data.forfatters_data.join(split_1_niv)));       
+        
+        //row.remove("producents_data")  	
+      	return row; 
+       
+       };
+
+       /**
+       * Process Dimensions
+       **/       
+       function process_dimensions(row) {
+        var dimensions_split = new String(row.get("meas_all")).split(split_1_niv);                     				
+      	var arrayLength = dimensions_split.length;                                 
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = dimensions_split[i].split(split_2_niv);
+          var dimension_type = values[0];                          
+          var dimension_datas = concat_dimension_datas(values);
+          var dimension_weight_datas = concat_weight_datas(values);
+          var dimension_diameter_datas = concat_diameter_datas(values);
+          
+          //* there should be only one dimension of each type - if there are more than that, only the last one is taken into account 
+          if (isValidDataText(dimension_datas))
+            row.put("dimension_" + dimension_type, dimension_datas);
+          
+          if (isValidDataText(dimension_weight_datas))
+            row.put("dimension_weight", dimension_weight_datas);
+
+          if (isValidDataText(dimension_diameter_datas))
+            row.put("dimension_diameter", dimension_diameter_datas);             
+        };                                                                                                        
+      
+        row.remove("meas_all");  	
+      	return row; 
+       
+       };
+
+      /**
+       * Process Materiale
+       **/       
+       function process_materiale(row) {
+        var materiales_split = new String(row.get("materiale")).split(split_1_niv);         
+        
+        var materiales_data = [];      				
+      	var arrayLength = materiales_split.length;               
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = materiales_split[i].split(split_2_niv);
+      	  
+      	  /*
+      	  var materiale_type = values[1];
+                    
+          switch(materiale_type) {
+            case 'Materiale':                                
+                if(isValidDataText(values[0]))
+                  materiales_data.push(values[0]);
+                break;
+            }
+           */
+           
+			if(isValidDataText(values[0]))
+                  materiales_data.push(values[0]);                                                                  
+           
+        };                                                                                                        
+        
+        row.remove("materiale"); 
+                
+        if(materiales_data.length > 0)                                                                                                     
+          row.put("materiale", new String(materiales_data.join(split_1_niv)));                                      	
+      	
+        return row; 
+       
+       }; 
+      
+      /**
+       * Process Production places
+       **/       
+       function process_production_place(row) {
+        var places_split = new String(row.get("object_production_place")).split(split_1_niv);         
+        
+        var places_data = [];      				
+      	var arrayLength = places_split.length;               
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = places_split[i].split(split_2_niv);
+      		var place_type = values[1];
+                    
+          switch(codepoints(place_type)) {
+            case 'udgivelsessted':              	                                
+                if(isValidDataText(values[0]))
+                  places_data.push(values[0]);
+                break;                                                  
+          } 
+        };                                                                                                        
+        
+        row.remove("object_production_place"); 
+                
+        if(places_data.length > 0)                                                                                                     
+          row.put("object_production_place_udgivet", new String(places_data.join(split_1_niv)));                                      	
+      	
+        return row; 
+       
+       };           
+      
+      /**
+       * Process Production dates
+       **/       
+       function process_production_date(row) {
+        var dates_split = new String(row.get("object_all_production_dates")).split(split_1_niv);         
+        
+        var datering;
+        var datering_eng;
+        var datering_earliest;
+        var datering_latest;
+        var datering_udfoert;
+        var datering_udgivet;
+              				
+      	var arrayLength = dates_split.length;               
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = dates_split[i].split(split_2_niv);
+          var date_type = values[0];
+          var date = values[1];
+          var date_early = values[2];
+          var date_late = values[3];
+          var date_eng = values[4];
+                    
+          switch(codepoints(date_type)) {
+            case 'udfU+F8rt':                                
+                if(isValidDataText(date))
+                  datering_udfoert = date;
+                break;
+             
+            case 'udgivet':
+            	if(isValidDataText(date))
+                  datering_udgivet = date;
+            	break;                                
+            
+            default:
+                if(isValidDataText(date))
+                  datering = date;
+                if(isValidDataText(date_eng))
+                  datering_eng = date_eng;
+                if(isValidDataText(date_early))
+                  datering_earliest = date_early;
+                if(isValidDataText(date_late))
+                  datering_latest = date_late;                                                              
+          } 
+        };                                                                                                        
+        
+        row.remove("object_all_production_dates"); 
+                
+        if(isValidDataText(datering))                                                                                                     
+          row.put("object_production_date", datering);
+          
+        if(isValidDataText(datering_eng))                                                                                                     
+          row.put("object_production_date_eng", datering_eng);
+        
+        /*
+        if(isValidDataText(datering_earliest))                                                                                                     
+          row.put("object_production_date_earliest", datering_earliest);
+        
+        if(isValidDataText(datering_latest))                                                                                                     
+          row.put("object_production_date_latest", datering_latest);
+        */
+        
+        if(isValidDataText(datering_udfoert))                                                                                                     
+          row.put("object_production_date_udfoert", datering_udfoert); 
+          
+        if(isValidDataText(datering_udgivet))                                                                                                     
+          row.put("object_production_date_udgivet", datering_udgivet);                                      	
+      	
+        return row; 
+       
+       };      
+       
+      /**
+       * Process Inscriptions
+       **/       
+       function process_inscriptions(row) {
+        var inscriptions_split = new String(row.get("inscription_data")).split(split_1_niv);         
+        
+        var inscriptions_data = [];      				
+      	var arrayLength = inscriptions_split.length;
+        
+        var signatur = [];
+        var stoebemaerke = [];
+        var tryktsignatur = [];
+        var paaskrift = [];
+        var stoebenummer = [];
+        var trykttekst = [];  
+        var samlermaerke = [];        
+        
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = inscriptions_split[i].split(split_2_niv);
+      		var inscription_type = values[0];
+                    
+          switch(codepoints(inscription_type)) {
+            case 'signatur':
+                var sign = concat_inscription_data(values);                
+                if(isValidDataText(sign))
+                  signatur.push(sign);
+                break;
+            case 'pU+E5skrift':
+                var sign = concat_inscription_data(values);                
+                if(isValidDataText(sign))
+                  paaskrift.push(sign);
+                break;             
+            case 'tryktU+20signatur':
+                var sign = concat_inscription_data(values);                
+                if(isValidDataText(sign))
+                  tryktsignatur.push(sign);
+                break;
+            case 'tryktU+20tekst':
+                var sign = concat_inscription_data(values);                
+                if(isValidDataText(sign))
+                  trykttekst.push(sign);
+                break;  
+            case 'stU+F8benummer':
+                var sign = concat_inscription_data_inhold(values);                
+                if(isValidDataText(sign))
+                  stoebenummer.push(sign);
+                break;  
+            case 'stU+F8bemU+E6rke':
+                var sign = concat_inscription_data_inhold(values);                
+                if(isValidDataText(sign))
+                  stoebemaerke.push(sign);
+                break;              
+            case 'samlermU+E6rke':
+                var sign = concat_inscription_data_inhold(values);                
+                if(isValidDataText(sign))
+                  samlermaerke.push(sign);
+                break;                                                   
+          } 
+        };                                                                                                        
+        
+        if(isValidDataText(signatur.join(split_1_niv)))                                                                                                     
+          row.put("inscription_signatur", new String(signatur.join(split_1_niv)));
+        
+        if(isValidDataText(stoebemaerke.join(split_1_niv)))                                                                                                     
+          row.put("inscription_stoebemaerke", new String(stoebemaerke.join(split_1_niv))); 
+
+        if(isValidDataText(tryktsignatur.join(split_1_niv)))                                                                                                     
+          row.put("inscription_tryktsignatur", new String(tryktsignatur.join(split_1_niv)));           
+
+        if(isValidDataText(paaskrift.join(split_1_niv)))                                                                                                     
+          row.put("inscription_paaskrift", new String(paaskrift.join(split_1_niv)));
+        
+        if(isValidDataText(stoebenummer.join(split_1_niv)))                                                                                                     
+          row.put("inscription_stoebenummer", new String(stoebenummer.join(split_1_niv))); 
+
+        if(isValidDataText(trykttekst.join(split_1_niv)))                                                                                                     
+          row.put("inscription_trykttekst", new String(trykttekst.join(split_1_niv))); 
+          
+        if(isValidDataText(samlermaerke.join(split_1_niv)))                                                                                                     
+          row.put("inscription_samlermaerke", new String(samlermaerke.join(split_1_niv)));                    
+                    
+        row.remove("inscription_data");  	
+      	return row; 
+       
+       };
+       
+       /**
+       * Process Other Numbers
+       **/       
+       function process_other_numbers(row) {
+        var other_num_split = new String(row.get("other_numbers")).split(split_1_niv);         
+      	var arrayLength = other_num_split.length;        
+        
+        var andet_inventar = [];          
+        var beckett = [];
+        var gernsheim = [];
+        var vaerkfortegn = [];
+        var tidligere = [];
+        var bladnummer = [];
+        var sidetal = [];
+        var foto = [];
+
+      	for (var i = 0; i < arrayLength; i++) {
+          var values = other_num_split[i].split(split_2_niv);
+      		var other_num_type = values[0];
+          
+          var num = values.length > 0 ? values[1] : null;                
+          
+          if(isValidDataText(num)){
+          
+            switch(codepoints(other_num_type).toLowerCase()) {
+              case 'andetu+20inv.u+20nr.':                  
+                  andet_inventar.push(num);
+                  break;
+              case 'beckettnr':                 
+                  beckett.push(num);
+                  break;
+              case 'gernsheimu+201':
+                  gernsheim.push(num);
+                  break;
+              case 'vu+e6rkfortegnelsesnr.':
+                  vaerkfortegn.push(num);
+                  break;
+              case 'tidligereu+20placering':
+                  tidligere.push(num);
+                  break;
+              case 'bladnummer':
+                  bladnummer.push(num);
+                  break;
+              case 'sidetal':
+                  sidetal.push(num);
+                  break;
+              case 'fotonummer':
+                  foto.push(num);
+                  break;
+                                                                             
+            }           
+          }
+        };                                                                                                        
+        
+        if(isValidDataText(andet_inventar.join(split_1_niv)))                                                                                                     
+          row.put("other_numbers_andet_inventar", new String(andet_inventar.join(split_1_niv)));
+          
+        if(isValidDataText(beckett.join(split_1_niv)))                                                                                                     
+          row.put("other_numbers_beckett", new String(beckett.join(split_1_niv)));
+          
+        if(isValidDataText(gernsheim.join(split_1_niv)))                                                                                                     
+          row.put("other_numbers_gernsheim", new String(gernsheim.join(split_1_niv)));
+          
+        if(isValidDataText(vaerkfortegn.join(split_1_niv)))                                                                                                     
+          row.put("other_numbers_vaerkfortegn", new String(vaerkfortegn.join(split_1_niv)));
+
+        if(isValidDataText(tidligere.join(split_1_niv)))                                                                                                     
+          row.put("other_numbers_tidligere", new String(tidligere.join(split_1_niv)));
+          
+        if(isValidDataText(bladnummer.join(split_1_niv)))                                                                                                     
+          row.put("other_numbers_bladnummer", new String(bladnummer.join(split_1_niv)));
+        
+        if(isValidDataText(sidetal.join(split_1_niv)))                                                                                                     
+          row.put("other_numbers_sidetal", new String(sidetal.join(split_1_niv)));
+
+		if(isValidDataText(foto.join(split_1_niv)))                                                                                                     
+          row.put("foto_nr", new String(foto.join(split_1_niv)));
+                                
+        row.remove("other_numbers");  	
+      	return row; 
+       
+       };
+       
+       /**
+       * Concat inscriptions data
+       * */
+       function concat_inscription_data(values){    		          
+          var verso = values.length > 1 && isValidDataText(values[1]) && values[1] == 't' ? String.format('{0}: ', 'verso') : '';
+          var placering = values.length > 2 && isValidDataText(values[2]) ? String.format('{0}', values[2]) : '';
+          var maade = values.length > 3 && isValidDataText(values[3]) ? String.format(': {0}', values[3]) : '';
+          var datering = values.length > 7 && isValidDataText(values[7]) ? String.format(': {0}', values[7]) : '';
+          var indhold = values.length > 4 && isValidDataText(values[4]) ? String.format(': {0}', values[4]) : '';
+          var dansk = values.length > 5 && isValidDataText(values[5]) ? String.format(': {0}', values[5]) : '';
+          var note = values.length > 6 && isValidDataText(values[6]) ? String.format(': {0}', values[6]) : '';
+          
+          return  isValidDataText(verso) || 
+                  isValidDataText(placering) ||
+                  isValidDataText(maade) ||
+                  isValidDataText(datering) ||
+                  isValidDataText(indhold) ||
+                  isValidDataText(dansk) ||
+                  isValidDataText(note) ?
+                                                              
+                      String.format('{0}{1}{2}{3}{4}{5}{6}',
+                                verso,
+                                placering,                         
+                                maade,
+                                datering,                             
+                                indhold,                           
+                                dansk,                             
+                                note )
+                    :
+                      '';                                       
+       };
+
+       /**
+       * Concat inscriptions data - just inhold
+       * */
+       function concat_inscription_data_inhold(values){
+          return  values.length > 4 && isValidDataText(values[4]) ? 
+                  String.format('{0}', values[4]) : '';                                
+       };
+             
+
+       /**
+       * Concat weight data
+       * */
+       function concat_weight_datas(values){
+    		var weight = values[9];
+        	var weight_unit = values[10];        
+        	return isValidDataText(weight) ? String.format('{0} {1}', weight, weight_unit): '';        
+       };
+       
+       /**
+       * Concat diameter data
+       * */
+       function concat_diameter_datas(values){
+    		var diameter = values[7];
+        var diameter_unit = values[8];        
+        return isValidDataText(diameter) && isValidDataText(diameter_unit) ? String.format('{0} {1}', diameter, diameter_unit): '';        
+       };
+
+       /**
+       * Concat dimensions data
+       * */
+       function concat_dimension_datas(values){
+    		var hoj = values[1];
+        var hoj_unit_value = isValidDataText(values[2]) ? values[2] : '(?)';
+        var hoj_value = isValidDataText(hoj) ? String.format('{0}', hoj): '';
+        var bred = values[3];        
+        var bred_value = isValidDataText(bred) ? String.format(' x {0}', bred) : '';
+        var dyb = values[5];  
+        var dyb_value = isValidDataText(dyb) ? String.format(' x {0}', dyb) : '';
+        
+        return isValidDataText(hoj_value) || isValidDataText(bred_value) || isValidDataText(dyb_value) ? String.format('{0}{1}{2} {3}', hoj_value, bred_value, dyb_value, hoj_unit_value) : '';
+       };
+       
+      /**
+       * Concat artist data 
+       *        
+       * @datas                   artist data  
+       * @all_artists_data        object of arrays (passed by reference)
+       * 
+       * Return: copy concatened artist data in @all_artists_data (passed by reference)                           
+       **/
+      function concat_artists_data(values, all_artists_data) {
+   		var name = values[2];
+   		var birth = values[4];
+   		var death = values[7];
+   		var natio = values[9];
+   		var natio_eng = values[10];
+   		var role = values[1];   
+   		var tmp = new String();
+    
+        if (isValidDataText(name)){
+	        /* Short */	        
+	        all_artists_data.artists_data_short.push(name);	  
+	        
+	        /* Short with role */	
+	        tmp = String.format('{0}{1}' , 
+	      				isValidDataText(name) ? name : '',     				 	      				
+	              		isValidDataText(role, 'role') ? String.format(' ;<3-;({0});-3>;', (role).toLowerCase() ) : '');
+	              		        
+	        all_artists_data.artists_data_short_w_role.push(tmp);	        	        
+	        
+	        /* General */        
+	        if(isPersonData(values, 'producent')){        
+	          tmp = String.format(';<1-;{0};-1>;;<2-;{1} - {2};-2>;{3}{4}' , 
+	        		isValidDataText(name) ? name : '', 
+	        		isValidDataText(birth) ? birth : ' ',
+	            	isValidDataText(death) ? death : ' ', 
+	        		isValidDataText(natio) ? String.format(' ;<3-;{0};-3>;', natio) : '',
+	        		isValidDataText(natio_eng) ? String.format(' ;<4-;/ {0};-4>;', natio_eng) : ''
+	        		);
+	        }else{
+	          tmp = String.format(';<1-;{0};-1>;{1}' , 
+	        		isValidDataText(name) ? name : '',
+	        		isValidDataText(birth, 'date') ?
+	                		isValidDataText(death, 'date') ? String.format(';<2-; {0} - {1};-2>;', birth, death) : ''                   
+	              		: 
+	              			''
+	              	);
+	        }
+	    		      
+	    	all_artists_data.artists_data_collectionspace.push(tmp);
+	    	
+	    	/* Skilt */        
+	        if(isPersonData(values, 'producent')){
+	          tmp = String.format('{0}{5}{1} - {2}{3}{4}' , 
+		        		isValidDataText(name) ? name : '', 
+		        		isValidDataText(birth) ? birth : ' ',
+		            	isValidDataText(death) ? death : ' ', 
+		        		isValidDataText(natio) ? String.format(' ;<1-;{0};-1>;', natio) : '',
+		        		isValidDataText(natio_eng) ? String.format(' / {0}', natio_eng) : '',
+		        		split_2_niv
+	        		);
+	        }else{
+	          tmp = String.format(';<1-;{0};-1>;{2}{1}' , 
+		        		isValidDataText(name) ? name : '',
+		        		isValidDataText(birth, 'date') ?
+		                		isValidDataText(death, 'date') ? String.format(';<2-; {0} - {1};-2>;', birth, death) : ''                   
+		              		: 
+		              			'',
+		              	split_2_niv
+	              	);
+	        }
+	    		      
+	    	all_artists_data.artists_data_for_skilt.push(tmp);
+	    	
+	    
+	        /* Extented Litt */
+	        if(isPersonData(values, 'producent')){
+	      		tmp = String.format(';<1-;{0};-1>;;<2-;{1} {2} - {3};-2>;{4}' , 
+	      				isValidDataText(name) ? name : '',
+	              		isValidDataText(natio) ? String.format(', {0},', natio ) : '',      				 
+	      				isValidDataText(birth) ? birth : ' ',
+	              		isValidDataText(death) ? death : ' ',
+	              		isValidDataText(role, 'role') ? String.format(' ;<3-;({0});-3>;', (role).toLowerCase() ) : '');
+	         }else{
+	           tmp = String.format(';<1-;{0};-1>;{1};{2}' , 
+	      				isValidDataText(name) ? name : '',     				 
+	      				isValidDataText(birth, 'date') ?
+	                  			isValidDataText(death, 'date') ? String.format(';<2-; {0} - {1};-2>;', birth, death) : ''                   
+	                		: 
+	                			'',
+	              		isValidDataText(role, 'role') ? String.format(' ;<3-;({0});-3>;', (role).toLowerCase() ) : '');
+	         
+	         }
+	    		 
+	         all_artists_data.artists_data_collectionspace_catalog_ext_litt.push(tmp);
+	     }
+      };  
+      
+      /**
+       * Concat printer data 
+       *        
+       * @datas                printer data  
+       * @all_printers_data    object of arrays (passed by reference)
+       * 
+       * Return: copy concatened artist data in @all_printers_data (passed by reference)                           
+       **/
+      function concat_printers_data(values, all_printers_data, row) {
+   		var name = values[2];
+   		var birth = values[4];
+   		var death = values[7];
+   		var natio = values[9];
+   		var role = values[1]; 
+   		var udfoert_date = row.get("object_production_date_udfoert");   
+   		var tmp;
+   		   		
+   		if (isValidDataText(name)){            
+          /* Skilt */
+          if(isPersonData(values, 'producent')){
+            tmp = String.format('{0} ({1}{2}trykker)' ,         
+              isValidDataText(name) ? name : '',                				 
+              isValidDataText(birth, 'date') ?
+                    isValidDataText(death, 'date') ? String.format('{0} - {1}', birth, death) : ''                   
+                  : '',
+              isValidDataText(natio) ? String.format(', {0}, ', natio ) : '');  
+          }          
+          else{
+            tmp = String.format('{0} ({1}{2}trykker)' ,         
+              isValidDataText(name) ? name : '',                				 
+              isValidDataText(birth, 'date') ?
+                    isValidDataText(death, 'date') ? String.format('{0} - {1}', birth, death) : ''                   
+                  : '',
+              isValidDataText(natio, 'orga_place') ? String.format(', {0}, ', natio ) : '');  
+          }
+      		             
+      
+      		all_printers_data.printers_data_collectionspace.push(tmp);
+      
+          /* Extented Litt */                    
+          if (isValidDataText(name)){
+          		var date = isValidDataText(udfoert_date) ? String.format(', {0}', udfoert_date) : '';
+          		var res = String.format('{0}{1}', name, date);
+          		all_printers_data.printers_data_collectionspace_catalog_ext_litt.push(res);
+          }                                     	      
+      		            
+        }  
+      };  
+      
+      /**
+       * Concat editor data 
+       *        
+       * @datas                   editor data  
+       * @all_editors_data        object of arrays (passed by reference)
+       * 
+       * Return: copy concatened artist data in @all_editors_data (passed by reference)                           
+       **/
+      function concat_editors_data(values, all_editors_data, row) {
+		var udgivet_sted = row.get("object_production_place_udgivet"); 									
+		var udgivet_date = row.get("object_production_date_udgivet");
+		var name = values[2];
+		var birth = values[4];
+		var death = values[7];
+		var natio = values[9];
+		var role = values[1];    
+		var tmp;
+		
+		if (isValidDataText(name)){      
+          /* Skilt */
+          if(isPersonData(values, 'producent')){
+            tmp = String.format('{0} ({1}{2}udgiver)' ,         
+              isValidDataText(name) ? name : '',                				 
+              isValidDataText(birth, 'date') ?
+                    isValidDataText(death, 'date') ? String.format('{0} - {1}', birth, death) : ''                   
+                  : '',
+              isValidDataText(natio) ? String.format(', {0}, ', natio ) : '');  
+          }          
+          else{
+            tmp = String.format('{0} ({1}{2}udgiver)' ,         
+              isValidDataText(name) ? name : '',                				 
+              isValidDataText(birth, 'date') ?
+                    isValidDataText(death, 'date') ? String.format('{0} - {1}', birth, death) : ''                   
+                  : '',
+              isValidDataText(natio, 'orga_place') ? String.format(', {0}, ', natio ) : '');  
+          }
+      		             
+      
+      		all_editors_data.editors_data_collectionspace.push(tmp);
+      
+          /* Extented Litt */                    
+          if (isValidDataText(name)){
+            var sted = isValidDataText(udgivet_sted) ? String.format('{0}, ', udgivet_sted) : '';
+            var date = isValidDataText(udgivet_date) ? String.format(', {0}', udgivet_date) : '';
+            var editor = String.format('{0}{1}{2} ', sted, name, date);
+            all_editors_data.editors_data_collectionspace_catalog_ext_litt.push(editor); 
+          };            
+        }                      		            
+      };   
+      
+      /**
+       * Concat forfatter data 
+       *        
+       * @datas                       forfatter data  
+       * @all_forfatters_data         object of arrays (passed by reference)
+       * 
+       * Return: copy concatened artist data in @all_forfatters_data (passed by reference)                           
+       **/
+      function concat_forfatters_data(values, all_forfatters_data) {
+      		var name = values[2];
+      		var birth = values[4];
+      		var death = values[7];
+      		var natio = values[9];
+      		var role = values[1];    
+      		var tmp;
+      
+          if(isValidDataText(name)){            
+            all_forfatters_data.forfatters_data.push(name);    
+          }                         
+      };
+      
+      /**
+       * Citations 
+       **/			 		
+      function concat_citation(row) { 
+      
+      	var citations_split = new String(row.get("citations")).split(split_1_niv);
+      	var citations_data = [];			
+      	var arrayLength = citations_split.length;
+      
+      	for (var i = 0; i < arrayLength; i++) {
+      		var values = citations_split[i].split(split_2_niv);
+      		var agent = new String(values[0]);
+      		var title = new String(values[1]);
+      		var place = new String(values[2]);
+      		var date = new String(values[3]);
+      		var refnote = new String(values[4]);   
+      		var tmp;
+      
+      		tmp = String.format('{0};<1-;{1};-1>;{2}{3}{4}' , 
+		          isValidDataText(agent, 'agent') ? String.format('{0}, ', agent ) : '',
+		          title,
+		          isValidDataText(place) ? String.format(', {0}', place ) : '',
+		          isValidDataText(date) ? String.format(', {0}', date ) : '',
+		          isValidDataText(refnote) ? String.format(', {0}', refnote ) : '');
+      
+      		if (isValidDataText(title))
+            	citations_data.push(tmp);
+      
+      	};
+      
+      	if (citations_data.length > 0)
+          row.put("citation_data_collectionspace_catalog_ext_litt", citations_data.join(split_1_niv));  
+      
+      	return row; 
+      };   
+      
+      /**
+       * Exhibition 
+       **/
+      function concat_exhibition(row) { 
+      
+      	var exhibitionvenues_split = new String(row.get("exhibitionvenues")).split(split_1_niv);
+      	var exhibitions_data = [];			
+      	var arrayLength = exhibitionvenues_split.length;
+      
+      	for (var i = 0; i < arrayLength; i++) {
+      		var values = exhibitionvenues_split[i].split(split_2_niv);
+      		var title = new String(values[0]);
+      		var place = new String(values[1]);
+      		var date_start = new String(values[2]);
+      		var date_end = new String(values[3]);   
+      		var tmp;
+      
+      		tmp = String.format(';<1-;{0};-1>;, {1}, {2} {3}' , 							
+      		title, 
+      		place, 
+      		date_start, 
+      		date_end);
+      
+      		if (isValidDataText(title))
+            exhibitions_data.push(tmp);
+      
+      	};
+      
+      	if (exhibitions_data.length > 0)
+          row.put("exhibition_data_collectionspace_catalog_ext_litt", exhibitions_data.join(split_1_niv));  
+      
+      	return row; 
+      };   
+      
+      /**
+       * Reference texts 
+       *             */
+      function concat_reference(row) {         
+      	var refs_texts = new String(row.get("reference_texts")).split(split_1_niv);
+      	var refs_textsLength = refs_texts.length;
+      	var references_data = [];
+      	for (var k = 0; k < refs_textsLength; k++) {
+      		var refs = refs_texts[k].split(split_2_niv);
+      
+      		var source = refs[0];
+      		var text = refs[1];    				    			
+      		var tmp;
+      
+      		tmp = String.format(';<1-;{0};-1>;: {1}' , 							
+      		(source), 
+      		(text));
+      
+      		if (isValidDataText(source))
+            references_data.push(tmp);
+      	};
+      
+        if (references_data.length > 0)
+      	 row.put("reference_texts_data_collectionspace_catalog_ext_litt", references_data.join(split_1_niv));        
+      
+      	return row; 
+      };   			      
+			
+	
+	    ]]>
+	</script>  	
+
+	<dataSource driver="org.postgresql.Driver"
+		url="jdbc:postgresql://cs-sql-01:5432/nuxeo" user="postgres"
+		password="test" />
+
+	<document>   
+  
+		 <entity 
+        name="objects" 
+        pk="csid"
+ 		query="SELECT DISTINCT csid FROM object_hierarchy0 
+             WHERE '${dih.request.clean}' != 'false' 
+                   OR object_hierarchy0.csid = '${dih.request.id}'"
+
+                      
+        deltaImportQuery="SELECT DISTINCT csid FROM object_hierarchy0 
+                          WHERE object_hierarchy0.csid = '${dih.delta.csid}'"
+                     
+        deltaQuery="
+                  
+SELECT 
+
+modif.csid AS csid,
+MAX (modif.updatedat)   AS updatedat
+
+FROM
+(
+
+/* object created/changed/deleted */
+
+        SELECT                        
+                hierarchy0.name                        AS csid,
+                MAX (collectionspace_core.updatedat)   AS updatedat
+        
+        FROM public.collectionspace_core
+        
+        LEFT JOIN public.collectionobjects_common ON collectionspace_core.id = collectionobjects_common.id
+        LEFT JOIN public.hierarchy hierarchy0 ON collectionobjects_common.id = hierarchy0.id        
+        
+        WHERE collectionspace_core.tenantid = 5
+                AND collectionspace_core.updatedat &gt; '${dih.last_index_time}'
+                AND collectionspace_core.refname LIKE '%collectionobject%'
+        
+        GROUP BY csid
+
+
+UNION
+
+        /* citation authority changed */
+        SELECT
+        
+                
+                hierarchy0.name                        AS csid,
+                MAX (collectionspace_core.updatedat)   AS updatedat
+        
+        FROM public.collectionspace_core
+        
+        LEFT JOIN public.referencegroup ON collectionspace_core.refname = referencegroup.reference 
+        LEFT JOIN public.hierarchy hierarchy_ref ON referencegroup.id = hierarchy_ref.id AND hierarchy_ref.primarytype = 'referenceGroup'
+        LEFT JOIN public.collectionobjects_common ON collectionobjects_common.id = hierarchy_ref.parentid 
+        LEFT JOIN public.hierarchy hierarchy0 ON collectionobjects_common.id = hierarchy0.id
+        
+        WHERE collectionspace_core.tenantid = 5
+                AND collectionspace_core.updatedat &gt; '${dih.last_index_time}'
+                AND collectionspace_core.refname LIKE '%citationauthorities%'
+        
+        GROUP BY csid
+
+
+UNION
+
+        /* person or organisation authority changed (artist) */
+        SELECT
+        
+                
+                hierarchy0.name                        AS csid,
+                MAX (collectionspace_core.updatedat)   AS updatedat
+        
+        FROM public.collectionspace_core
+        
+        LEFT JOIN public.faobjectproductionpersongroup faobjectproductionpersongroup_artist ON collectionspace_core.refname = faobjectproductionpersongroup_artist.faobjectproductionperson 
+        LEFT JOIN public.hierarchy hierarchy_prodgroup ON faobjectproductionpersongroup_artist.id = hierarchy_prodgroup.id AND hierarchy_prodgroup.primarytype = 'faObjectProductionPersonGroup'
+        LEFT JOIN public.collectionobjects_common ON collectionobjects_common.id = hierarchy_prodgroup.parentid 
+        LEFT JOIN public.hierarchy hierarchy0 ON collectionobjects_common.id = hierarchy0.id
+        
+        WHERE collectionspace_core.tenantid = 5
+                AND collectionspace_core.updatedat &gt; '${dih.last_index_time}'
+                AND (collectionspace_core.refname LIKE '%personauthorities%' OR collectionspace_core.refname LIKE '%orgauthorities%')
+        
+        GROUP BY csid
+
+
+UNION
+
+        /* person authority changed (portrait) */
+        SELECT
+        
+                
+                hierarchy0.name                        AS csid,
+                MAX (collectionspace_core.updatedat)   AS updatedat
+        
+        
+        FROM public.collectionspace_core
+        
+        LEFT JOIN public.collectionobjects_common_contentpersons portrait ON collectionspace_core.refname = portrait.item 
+        LEFT JOIN public.collectionobjects_common ON collectionobjects_common.id = portrait.id 
+        LEFT JOIN public.hierarchy hierarchy0 ON collectionobjects_common.id = hierarchy0.id
+        
+        WHERE collectionspace_core.tenantid = 5
+                AND collectionspace_core.updatedat &gt; '${dih.last_index_time}'
+                AND collectionspace_core.refname LIKE '%personauthorities%'
+        
+        GROUP BY csid
+
+
+UNION
+
+        /* place authority changed (topografisk motiv) */
+        SELECT
+        
+                
+                hierarchy0.name                        AS csid,
+                MAX (collectionspace_core.updatedat)   AS updatedat
+        
+        
+        FROM public.collectionspace_core
+        
+        LEFT JOIN public.collectionobjects_common_contentplaces contentplaces ON collectionspace_core.refname = contentplaces.item 
+        LEFT JOIN public.collectionobjects_common ON collectionobjects_common.id = contentplaces.id 
+        LEFT JOIN public.hierarchy hierarchy0 ON collectionobjects_common.id = hierarchy0.id
+        
+        WHERE collectionspace_core.tenantid = 5
+                AND collectionspace_core.updatedat &gt; '${dih.last_index_time}'
+                AND collectionspace_core.refname LIKE '%placeauthorities%'
+        
+        GROUP BY csid
+
+UNION
+
+       /* related acquisition / placering / media */
+        SELECT
+        
+                relations_common.subjectcsid   AS csid,
+                MAX (collectionspace_core.updatedat)   AS updatedat
+        
+        FROM public.collectionspace_core
+        
+        LEFT JOIN public.hierarchy hierarchy_relation ON hierarchy_relation.id = collectionspace_core.id
+        LEFT JOIN public.relations_common ON hierarchy_relation.name = relations_common.objectcsid AND relations_common.subjectdocumenttype = 'CollectionObject'
+        
+        WHERE collectionspace_core.tenantid = 5
+                AND collectionspace_core.updatedat &gt; '${dih.last_index_time}'
+        
+        GROUP BY csid
+        
+UNION        
+        /* related as object */
+        SELECT
+        
+                relations_common.objectcsid   AS csid,
+                MAX (collectionspace_core.updatedat)   AS updatedat
+       
+        FROM public.collectionspace_core
+        
+        LEFT JOIN public.relations_common ON relations_common.id = collectionspace_core.id AND relations_common.subjectdocumenttype = 'CollectionObject' 
+        
+        WHERE collectionspace_core.tenantid = 5
+                AND collectionspace_core.updatedat &gt; '${dih.last_index_time}'              
+        
+        GROUP BY csid    
+        
+ UNION        
+        
+        /* related as subject */
+        SELECT
+        
+                relations_common.subjectcsid   AS csid,
+                MAX (collectionspace_core.updatedat)   AS updatedat
+       
+        FROM public.collectionspace_core
+        
+        LEFT JOIN public.relations_common ON relations_common.id = collectionspace_core.id AND relations_common.subjectdocumenttype = 'CollectionObject' 
+        
+        WHERE collectionspace_core.tenantid = 5
+                AND collectionspace_core.updatedat &gt; '${dih.last_index_time}'               
+        
+        GROUP BY csid  
+        
+) AS modif
+
+WHERE modif.csid IS NOT NULL 
+
+GROUP BY csid                  
+                  
+                  ">
+        
+          <entity 
+              name="data" 
+              query="
+
+SELECT
+
+collectionobjects_common.objectnumber                                 AS id,
+
+smkstructureddatesmkgroup_obj_acq_date.datesmkdisplaytext             AS acq_date,
+smkstructureddatesmkgroup_obj_acq_date.datesmkearliestscalarvalue	AS acq_date_earliest,
+smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue		AS acq_date_latest,
+smkstructureddatesmkgroup_obj_acq_date.datesmkdisplayengtext          AS acq_date_eng,
+acquisitions_common.acquisitionnote                                   AS acq_note,
+acquisitions_common.acquisitionreason                                 AS acq_reason,
+vocabularyitems_common_acq.displayname                                AS acq_method,
+CAST (acquisitions_common.originalobjectpurchasepricevalue AS TEXT)   AS acq_price,
+vocabularyitems_common_purch_curr.displayname                         AS acq_price_currency,
+CAST (acquisitions_common.grouppurchasepricevalue AS TEXT)            AS acq_samlet_price,
+vocabularyitems_common_group_purch_curr.displayname                   AS acq_samlet_price_currency,
+acquisitions_smk.smkacquistionsource                                  AS acq_source,
+
+collectionobjects_smk.smksupport                                      AS bagklaedning,
+
+citations.citations                                                   AS citations,
+hierarchy0.name                                                       AS csid,  
+contentnote.content_note                                              AS content_notes,
+comments.comments                                                     AS comments,
+collectionobjects_finearts.facopyrightstatement                       AS copyright,
+
+farelatedworklabelgroup.farelatedworklabel                            AS description_note,
+collectionobjects_common.distinguishingfeatures                       AS distinguishingfeatures,
+
+ejer.ejer                                                             AS ejer,
+exhibitions.exhibitionvenue                                           AS exhibitionvenues,
+array_to_string(media.externalurl,',')                                AS externalurl,
+
+vocabularyitems_format.displayname                                    AS form,
+collectionobjects_finearts.famoulder                                  AS formeri,
+
+betegnelser.betegnelser_data                                          AS inscription_data,
+collectionobjects_smk.smkinsurancedate                                AS insur_date,
+collectionobjects_smk.smkinsurancevalue                               AS insur_value,
+vocabularyitems_common_insurance_curr.displayname                     AS insur_curr,
+
+littref.litt_references                                               AS litt_references,
+location.location_date                                                AS location_date,
+location.location_name                                                AS location_name,
+location.location_note                                                AS location_note,
+collectionobjects_common.copynumber                                   AS location_kks_kas,
+core.updatedat                                                        AS last_update,
+
+materiale.materiale                                                   AS materiale,
+multi_work.multi_work_ref                                             AS multi_work_ref,
+collectionobjects_common.numberofobjects                              AS numberofobjects,
+meas_all.meas_all                                                     AS meas_all,
+collectionobjects_smk.smkmicroclimateframe                            AS mikroklimaramme,
+
+collectionobjects_finearts.faorientationremarks                       AS note_elementer,
+
+collectionobjects_finearts.faorientationdescription                   AS opstilling,
+collectionobjects_common.objectnumber                                 AS objectnumber,
+object_all_production_dates.production_dates                          AS object_all_production_dates,
+object_all_production_dates.datesmkearliestscalarvalue				AS object_production_date_earliest,
+object_all_production_dates.datesmklatestscalarvalue				AS object_production_date_latest,
+objectproductionnote.objectproductionnote                             AS object_production_note,
+production_place.production_place                                     AS object_production_place,
+concepttermgroup.termdisplayname                                      AS object_type,
+objbriefdescriptions.objbriefdescriptions                             AS object_briefdescriptions,
+objectophavsbeskrivelse.objectophavsbeskrivelse                       AS objectophavsbeskrivelse,
+collectionobjects_common.editionnumber                                AS oplag,
+other_numbers.other_numbers                                           AS other_numbers,
+
+faproductiontechniquegroup.faproductiontechnique                      AS prod_technique_all,
+proveniens.proveniens                                                 AS proveniens,
+collectionobjects_common.physicaldescription                          AS physicaldescription,
+portrait_person.portrait_person                                       AS portrait_person,
+collectionobjects_smk.smkposter                                       AS plakat,
+collectionobjects_smk.smkpostcard                                     AS postkort,
+producent.producents_data                                             AS producents_data,
+
+related_work.title_dk                                                 AS related_works_title_dk,
+reference_text.reference_text                                         AS reference_texts,
+
+collectionobjects_finearts.fastatedescription                         AS stadium,
+sikkerhed.status                                                      AS sikkerhedstatus,
+shape.displayname                                                     AS shape,
+
+title_all.title_all                                                   AS title_all,
+techniquearticle.techniquearticle                                     AS techniquearticle,
+topografisk_motiv                                                     AS topografisk_motiv,
+
+vaerkstatus.vaerkstatus                                               AS vaerkstatus,
+
+collectionobjects_finearts.fawatermark                                AS watermark
+
+
+FROM public.collectionobjects_common collectionobjects_common
+
+INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+
+/* - object -*/
+        /* object fabrication */
+        LEFT JOIN(
+                
+                SELECT
+                object_hierarchy0.objid AS objid,
+                string_agg(
+                        format('%s;--;%s', 
+                                faproductiontechniquegroup.faproductiontechnique, 
+                                faproductiontechniquegroup.faproductiontechniquelanguage) 
+                 ,';-;')AS faproductiontechnique
+                
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN faproductiontechniquegroup ON object_hierarchy0.primarytype_id = faproductiontechniquegroup.id 
+                        
+                WHERE object_hierarchy0.primarytype = 'faProductionTechniqueGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+                
+                GROUP BY
+                        object_hierarchy0.objid
+                
+        ) AS faproductiontechniquegroup
+
+        ON collectionobjects_common.id = faproductiontechniquegroup.objid
+        
+        /* object technique article */
+        LEFT JOIN(
+               
+                SELECT
+                object_hierarchy0.objid AS objid,
+                string_agg(smktechnicalappliancegroup.smkappliance,';-;') AS techniquearticle
+
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN smktechnicalappliancegroup ON object_hierarchy0.primarytype_id = smktechnicalappliancegroup.id 
+                        
+                WHERE object_hierarchy0.primarytype = 'smkTechnicalApplianceGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+
+                GROUP BY
+                        object_hierarchy0.objid
+                                                       
+        ) AS techniquearticle
+
+        ON collectionobjects_common.id = techniquearticle.objid
+        
+        /* objet materiale */
+        
+        LEFT JOIN(
+               
+                SELECT
+                
+                object_hierarchy0.objid AS objid,
+                string_agg(
+                        format('%s;--;%s', 
+                                concepttermgroup.termdisplayname, 
+                                conceptauthorities_common.displayname) 
+                 ,';-;')AS materiale
+
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN famaterialgroup ON object_hierarchy0.primarytype_id = famaterialgroup.id 
+                LEFT JOIN concepts_common ON famaterialgroup.famaterial = concepts_common.refname
+                LEFT JOIN hierarchy hier_auth ON hier_auth.name = concepts_common.inauthority
+                LEFT JOIN conceptauthorities_common ON conceptauthorities_common.id = hier_auth.id
+                LEFT JOIN hierarchy hier_concept ON hier_concept.parentid = concepts_common.id
+                LEFT JOIN concepttermgroup ON concepttermgroup.id = hier_concept.id
+                        
+                WHERE object_hierarchy0.primarytype = 'faMaterialGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+                        
+
+                GROUP BY
+                        object_hierarchy0.objid
+                                                       
+        ) AS materiale
+
+        ON collectionobjects_common.id = materiale.objid
+        
+        /* object production place */
+        LEFT JOIN(
+               
+                SELECT
+                object_hierarchy0.objid AS objid,
+                string_agg(
+                        format('%s;--;%s', 
+                                placetermgroup.termdisplayname, 
+                                role.displayname) 
+                 ,';-;') AS production_place
+                 
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN objectproductionplacegroup ON object_hierarchy0.primarytype_id = objectproductionplacegroup.id 
+                LEFT JOIN public.places_common ON places_common.refname = objectproductionplacegroup.objectproductionplace
+                LEFT JOIN hierarchy hierarchy_places ON hierarchy_places.parentid = places_common.id
+                LEFT JOIN public.placetermgroup ON placetermgroup.id = hierarchy_places.id
+                LEFT JOIN vocabularyitems_common role ON role.refname = objectproductionplacegroup.objectproductionplacerole
+                        
+                WHERE object_hierarchy0.primarytype = 'objectProductionPlaceGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+
+                GROUP BY
+                        object_hierarchy0.objid
+                                                       
+        ) AS production_place
+
+        ON collectionobjects_common.id = production_place.objid
+        
+        /* object acquisition*/
+        LEFT JOIN public.hierarchy hierarchy_obj_acq ON collectionobjects_common.id = hierarchy_obj_acq.id AND hierarchy_obj_acq.primarytype = 'CollectionObjectTenant5'
+        LEFT JOIN public.relations_common relations_common_obj_acq ON relations_common_obj_acq.subjectcsid = hierarchy_obj_acq.name AND relations_common_obj_acq.objectdocumenttype = 'Acquisition'
+        LEFT JOIN public.hierarchy hierarchy_obj_acq_smk ON relations_common_obj_acq.objectcsid = hierarchy_obj_acq_smk.name
+        LEFT JOIN public.acquisitions_common acquisitions_common ON acquisitions_common.id = hierarchy_obj_acq_smk.id
+        LEFT JOIN public.vocabularyitems_common vocabularyitems_common_acq ON vocabularyitems_common_acq.refname = acquisitions_common.acquisitionmethod
+        LEFT JOIN public.acquisitions_smk acquisitions_smk ON acquisitions_smk.id = hierarchy_obj_acq_smk.id
+
+        /* object acquisition - purchase price currency*/
+        LEFT JOIN public.vocabularyitems_common vocabularyitems_common_purch_curr ON vocabularyitems_common_purch_curr.refname = acquisitions_common.originalobjectpurchasepricecurrency
+        LEFT JOIN public.vocabularyitems_common vocabularyitems_common_group_purch_curr ON vocabularyitems_common_group_purch_curr.refname = acquisitions_common.grouppurchasepricecurrency
+
+        /* object acquisition date */
+        LEFT JOIN public.hierarchy hierarchy_obj_acq_date ON acquisitions_common.id = hierarchy_obj_acq_date.parentid AND hierarchy_obj_acq_date.name = 'acquisitions_smk:smkAcquisitionDate'
+        LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgroup_obj_acq_date ON smkstructureddatesmkgroup_obj_acq_date.id = hierarchy_obj_acq_date.id
+             
+         /* object - all production dates */
+        LEFT JOIN(
+
+                SELECT
+
+                object_hierarchy0.objid AS objectid,
+                string_agg(
+                        format('%s;--;%s;--;%s;--;%s;--;%s',                                                         
+                                voc_qual.displayname,
+                                smkstructureddatesmkgroup_obj_prod_date.datesmkdisplaytext,
+                                smkstructureddatesmkgroup_obj_prod_date.datesmkearliestscalarvalue,
+                                smkstructureddatesmkgroup_obj_prod_date.datesmklatestscalarvalue,
+                                smkstructureddatesmkgroup_obj_prod_date.datesmkdisplayengtext) 
+                 ,';-;') AS production_dates,
+                 smkstructureddatesmkgroup_obj_prod_date.datesmkearliestscalarvalue,
+                 smkstructureddatesmkgroup_obj_prod_date.datesmklatestscalarvalue
+
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN smkobjectproductiondategroup ON object_hierarchy0.primarytype_id = smkobjectproductiondategroup.id 
+                LEFT JOIN hierarchy hierarchy_smk_obj_prod_date ON smkobjectproductiondategroup.id = hierarchy_smk_obj_prod_date.parentid AND hierarchy_smk_obj_prod_date.name = 'smkObjectProductionDate'
+                LEFT JOIN smkstructureddatesmkgroup smkstructureddatesmkgroup_obj_prod_date ON smkstructureddatesmkgroup_obj_prod_date.id = hierarchy_smk_obj_prod_date.id
+                LEFT JOIN vocabularyitems_common voc_qual ON voc_qual.refname = smkobjectproductiondategroup.smkobjectproductiondatequalifier
+        
+                WHERE object_hierarchy0.primarytype = 'smkObjectProductionDateGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+
+                GROUP BY
+                        object_hierarchy0.objid,
+                        smkstructureddatesmkgroup_obj_prod_date.datesmkearliestscalarvalue,
+                 		smkstructureddatesmkgroup_obj_prod_date.datesmklatestscalarvalue
+
+        ) AS object_all_production_dates
+
+        ON collectionobjects_common.id = object_all_production_dates.objectid
+     
+        /* object - note to production date */
+        LEFT JOIN(
+
+                SELECT
+
+                object_hierarchy0.objid AS objectid,
+                string_agg(smkobjectproductionnotegroup.smkobjectproductionnote,';-;') AS objectproductionnote
+
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN smkobjectproductionnotegroup ON object_hierarchy0.primarytype_id = smkobjectproductionnotegroup.id 
+                        
+                WHERE object_hierarchy0.primarytype = 'smkObjectProductionNoteGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+
+                GROUP BY
+                        object_hierarchy0.objid
+              
+
+        ) AS objectproductionnote
+
+        ON collectionobjects_common.id = objectproductionnote.objectid
+
+        /* object - ophavsbeskrivelse */
+        LEFT JOIN(
+
+                SELECT
+
+                object_hierarchy0.objid AS objectid,
+                string_agg(facreatordescriptiongroup.facreatordescription,';-;') AS objectophavsbeskrivelse
+
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN facreatordescriptiongroup ON object_hierarchy0.primarytype_id = facreatordescriptiongroup.id 
+                        
+                WHERE object_hierarchy0.primarytype = 'faCreatorDescriptionGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+
+                GROUP BY
+                        object_hierarchy0.objid
+
+        ) AS objectophavsbeskrivelse
+
+        ON collectionobjects_common.id = objectophavsbeskrivelse.objectid
+
+        /* object - kollation */
+        LEFT JOIN(
+
+                SELECT
+
+                collectionobjects_common.id AS objectid,
+                string_agg(obj_briefdescriptions.item,';-;') AS objbriefdescriptions
+
+                FROM public.collectionobjects_common collectionobjects_common
+
+                INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                LEFT JOIN public.collectionobjects_common_briefdescriptions obj_briefdescriptions ON obj_briefdescriptions.id = collectionobjects_common.id
+
+                WHERE hierarchy0.name = '${objects.csid}'
+
+                GROUP BY objectid
+
+        ) AS objbriefdescriptions
+
+        ON collectionobjects_common.id = objectproductionnote.objectid
+
+
+        /* object type */
+        LEFT JOIN public.collectionobjects_smk collectionobjects_smk ON collectionobjects_common.id = collectionobjects_smk.id
+        LEFT JOIN public.concepts_common concepts_common ON concepts_common.refname = collectionobjects_smk.smkobjectname
+        LEFT JOIN public.hierarchy hierarchy_smk_object_type ON concepts_common.id = hierarchy_smk_object_type.parentid AND hierarchy_smk_object_type.primarytype = 'conceptTermGroup'
+        LEFT JOIN public.concepttermgroup concepttermgroup ON concepttermgroup.id = hierarchy_smk_object_type.id
+
+        /* object history (proveniens) */
+        LEFT JOIN(
+
+                SELECT
+
+                object_hierarchy0.objid AS objectid,
+                string_agg(smkobjecthistorygroup.smkobjecthistory,';-;') AS proveniens
+
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN smkobjecthistorygroup ON object_hierarchy0.primarytype_id = smkobjecthistorygroup.id 
+                        
+                WHERE object_hierarchy0.primarytype = 'smkObjectHistoryGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+
+                GROUP BY
+                        object_hierarchy0.objid
+                              
+        ) AS proveniens
+
+        ON collectionobjects_common.id = proveniens.objectid
+        
+        /* object shape */
+        LEFT JOIN public.collectionobjects_finearts ON collectionobjects_finearts.id = collectionobjects_common.id
+        LEFT JOIN vocabularyitems_common shape ON shape.refname = collectionobjects_finearts.fadimensionsshape
+        
+/* - artist / printer / editor -*/
+
+  LEFT JOIN(
+         SELECT
+         objectid,
+         string_agg(sub_producent.producents_data,';-;') AS producents_data
+        
+         FROM(
+              
+               /* a person */
+               
+                        SELECT
+        
+                        object_hierarchy0.objid AS objectid,
+                        object_hierarchy0.pos,                                                
+                        
+                         format ('person;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s' ,
+                                                                        
+                                vocabularyitems_common_art_producent.displayname,
+                                
+                                (persontermgroup_producent.termdisplayname),                                                        
+        
+                                smkstructureddatesmkgroup_producent_birth.datesmkthirddateyear,
+                                
+                               	smkstructureddatesmkgroup_producent_birth.datesmkdisplaytext,
+        
+                               	smkstructureddatesmkgroup_producent_birth.datesmkdisplayengtext,
+                                
+                                smkstructureddatesmkgroup_producent_death.datesmkthirddateyear,
+        
+                                smkstructureddatesmkgroup_producent_death.datesmkdisplaytext,
+                                
+                                smkstructureddatesmkgroup_producent_death.datesmkdisplayengtext,
+        
+                                initcap(vocabularyitems_common_producent.displayname),
+                                
+                                initcap(vocabularyitems_common_producent.description)
+                                                                                                        
+                        )
+                        AS producents_data
+        
+                        FROM public.object_hierarchy0
+        
+                        LEFT JOIN faobjectproductionpersongroup faobjectproductionpersongroup_producent  ON object_hierarchy0.primarytype_id = faobjectproductionpersongroup_producent.id                         
+        
+                        /*  nationality */
+                        LEFT JOIN public.persons_common persons_common_producent ON persons_common_producent.refname = faobjectproductionpersongroup_producent.faobjectproductionperson
+                        LEFT JOIN public.persons_common_nationalities persons_common_nationalities_producent ON persons_common_producent.id = persons_common_nationalities_producent.id AND persons_common_nationalities_producent.pos = 0
+                        LEFT JOIN public.vocabularyitems_common vocabularyitems_common_producent ON vocabularyitems_common_producent.refname = persons_common_nationalities_producent.item
+        
+                        /*  name */
+                        RIGHT JOIN public.hierarchy hierarchy_producent_1 ON persons_common_producent.id = hierarchy_producent_1.parentid AND hierarchy_producent_1.primarytype = 'personTermGroup' AND hierarchy_producent_1.pos = 0
+                        LEFT JOIN public.persontermgroup persontermgroup_producent ON persontermgroup_producent.id = hierarchy_producent_1.id
+        
+                        /*  birth and death date */
+                        LEFT JOIN public.hierarchy hierarchy_producent_2 ON persons_common_producent.id = hierarchy_producent_2.parentid AND hierarchy_producent_2.name = 'persons_smk:smkDeathDate'
+                        LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgroup_producent_death ON smkstructureddatesmkgroup_producent_death.id = hierarchy_producent_2.id
+                        LEFT JOIN public.hierarchy hierarchy_producent_3 ON persons_common_producent.id  = hierarchy_producent_3.parentid AND hierarchy_producent_3.name = 'persons_smk:smkBirthDate'
+                        LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgroup_producent_birth ON smkstructureddatesmkgroup_producent_birth.id = hierarchy_producent_3.id
+        
+                        /*  role */
+                        LEFT JOIN public.vocabularyitems_common vocabularyitems_common_art_producent ON faobjectproductionpersongroup_producent.faobjectproductionpersonrole = vocabularyitems_common_art_producent.refname
+        
+                        WHERE object_hierarchy0.primarytype = 'faObjectProductionPersonGroup'                 
+                                AND object_hierarchy0.csid = '${objects.csid}'  
+        
+                        GROUP BY
+                            objectid,
+                            persontermgroup_producent.id,
+                            vocabularyitems_common_art_producent.displayname,
+                            persontermgroup_producent.forename,
+                            persontermgroup_producent.surname,
+                            vocabularyitems_common_producent.displayname,
+                            vocabularyitems_common_producent.description,
+                            smkstructureddatesmkgroup_producent_birth.datesmkdisplaytext,
+                            smkstructureddatesmkgroup_producent_death.datesmkdisplaytext,
+                            smkstructureddatesmkgroup_producent_birth.datesmkdisplayengtext,
+                            smkstructureddatesmkgroup_producent_death.datesmkdisplayengtext,
+                            smkstructureddatesmkgroup_producent_birth.datesmkthirddateyear,
+                            smkstructureddatesmkgroup_producent_death.datesmkthirddateyear,
+                            object_hierarchy0.pos 
+                      
+
+        UNION
+                 /* an organization */
+                
+                        SELECT
+
+                        object_hierarchy0.objid AS objectid,
+                        object_hierarchy0.pos,
+                          
+                        format ('orga;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;;--;%s' ,
+                                vocabularyitems_common_art_producent.displayname,
+                                org_name.termdisplayname,
+                                
+                                smkstructureddatesmkgroup_producent_org_creation.datesmkthirddateyear,
+        
+                                smkstructureddatesmkgroup_producent_org_creation.datesmkdisplaytext,
+                                
+                                smkstructureddatesmkgroup_producent_org_creation.datesmkdisplayengtext,
+                                
+                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkthirddateyear,
+        
+                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkdisplaytext,
+                                
+                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkdisplayengtext
+                         )
+                           
+                        AS producents_data
+
+                        FROM public.object_hierarchy0
+
+                        LEFT JOIN faobjectproductionpersongroup faobjectproductionpersongroup_producent  ON object_hierarchy0.primarytype_id = faobjectproductionpersongroup_producent.id                                         
+
+                        LEFT JOIN public.organizations_common org_common ON org_common.refname = faobjectproductionpersongroup_producent.faobjectproductionperson
+                        LEFT JOIN public.hierarchy hierarchy_org_name ON org_common.id = hierarchy_org_name.parentid AND hierarchy_org_name.primarytype = 'orgTermGroup'
+                        LEFT JOIN public.orgtermgroup org_name ON hierarchy_org_name.id = org_name.id
+
+                        /*  name  */
+                        RIGHT JOIN public.hierarchy hierarchy_producent_1 ON org_common.id = hierarchy_producent_1.parentid AND hierarchy_producent_1.primarytype = 'orgTermGroup' AND hierarchy_producent_1.pos = 0
+                        LEFT JOIN public.persontermgroup persontermgroup_producent ON persontermgroup_producent.id = hierarchy_producent_1.id
+
+                        /*  creation and dissolution date */
+                        LEFT JOIN public.hierarchy hierarchy_producent_2 ON org_common.id = hierarchy_producent_2.parentid AND hierarchy_producent_2.name = 'organizations_smk:smkFoundingDateGroup'
+                        LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgroup_producent_org_dissolution ON smkstructureddatesmkgroup_producent_org_dissolution.id = hierarchy_producent_2.id
+                        LEFT JOIN public.hierarchy hierarchy_producent_3 ON org_common.id  = hierarchy_producent_3.parentid AND hierarchy_producent_3.name = 'organizations_smk:smkDissolutionDateGroup'
+                        LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgroup_producent_org_creation ON smkstructureddatesmkgroup_producent_org_creation.id = hierarchy_producent_3.id
+
+                        /* role  */
+                        LEFT JOIN public.vocabularyitems_common vocabularyitems_common_art_producent ON faobjectproductionpersongroup_producent.faobjectproductionpersonrole = vocabularyitems_common_art_producent.refname
+
+                        WHERE object_hierarchy0.primarytype = 'faObjectProductionPersonGroup'                 
+                                AND object_hierarchy0.csid = '${objects.csid}'  
+
+                        GROUP BY
+                                objectid,
+                                org_name.termdisplayname,
+                                org_common.foundingplace,
+                                object_hierarchy0.pos,
+                                vocabularyitems_common_art_producent.displayname,
+                                smkstructureddatesmkgroup_producent_org_creation.datesmkdisplaytext,
+                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkdisplaytext,
+                                smkstructureddatesmkgroup_producent_org_creation.datesmkdisplayengtext,
+                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkdisplayengtext,
+                                smkstructureddatesmkgroup_producent_org_creation.datesmkthirddateyear,
+                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkthirddateyear                                    
+        
+        
+        ) AS sub_producent
+
+  GROUP BY objectid             
+
+) AS producent
+
+ON collectionobjects_common.id = producent.objectid
+
+/* - titles -*/
+        /* all titles*/
+LEFT JOIN(
+        SELECT
+        sub_title.objid as objid,
+        string_agg(sub_title.title_all,';-;') AS title_all
+
+        FROM(
+                SELECT
+                object_hierarchy0.objid AS objid,
+                string_agg(                        
+                         format('%s;--;%s;--;%s;--;%s',                                
+                                smktitlegroup.smktitle,
+                                smktitlegroup.smktitlenote,
+                                smktitlegroup.smktitlelanguage,
+                                title_translate.title_translate),                                        
+                        ';-;') 
+                 AS title_all
+
+                FROM public.object_hierarchy0
+        
+                LEFT JOIN smktitlegroup ON object_hierarchy0.primarytype_id = smktitlegroup.id
+
+                LEFT JOIN(                                
+                                SELECT 
+                                parentid,                                
+                                string_agg(title_translate, ';---;') AS title_translate
+                                
+                                FROM(
+                                        SELECT
+                                        hierarchy_title_translate.parentid,                                                   
+                                        
+                                        string_agg(
+                                                format('%s;-v;%s',
+                                                smktitletranslationsubgroup.smktitletranslation,
+                                                smktitletranslationsubgroup.smktitletranslationlanguage
+                                                ),                                        
+                                        ';---;')  AS title_translate,
+                                        
+                                        string_agg(hierarchy_title_translate.pos,'xxx')
+                                
+                                        FROM public.object_hierarchy0
+                                        
+                                        LEFT JOIN public.hierarchy hierarchy_title_translate ON object_hierarchy0.primarytype_id = hierarchy_title_translate.parentid                
+                                        LEFT JOIN public.smktitletranslationsubgroup smktitletranslationsubgroup ON smktitletranslationsubgroup.id = hierarchy_title_translate.id 
+                                
+                                        WHERE object_hierarchy0.primarytype = 'smkTitleGroup'                 
+                                                AND object_hierarchy0.csid = '${objects.csid}'                                         
+                                
+                                        GROUP BY
+                                                hierarchy_title_translate.parentid,
+                                                hierarchy_title_translate.pos
+                                                
+                                        ORDER BY                                          
+                                                 hierarchy_title_translate.parentid,
+                                                 hierarchy_title_translate.pos ASC
+                                ) AS sub_translate
+                                
+                                GROUP BY parentid                                
+
+                ) AS title_translate ON object_hierarchy0.primarytype_id = title_translate.parentid 
+      
+                WHERE object_hierarchy0.primarytype = 'smkTitleGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+        
+                GROUP BY
+                        object_hierarchy0.objid,
+                        object_hierarchy0.pos
+                
+                ORDER BY object_hierarchy0.pos ASC
+                                      
+        ) AS sub_title
+        
+        GROUP BY objid
+
+) AS title_all
+
+ON collectionobjects_common.id = title_all.objid
+
+/* - dimensions -*/
+
+LEFT JOIN (
+
+     SELECT 
+     sub_dim.objectid,
+     string_agg(sub_dim.meas_all, ';-;') AS meas_all
+     
+     FROM(                   
+                SELECT
+                object_hierarchy0.objid AS objectid,
+                format('%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s',
+                        measuredpartgroup_all.measuredpart,
+                        string_agg(CAST (CAST (dimensionsubgroup_all_hojde.value AS NUMERIC ) AS TEXT),',') ,
+                        string_agg(dimensionsubgroup_all_hojde.measurementunit,',') ,
+                        string_agg(CAST (CAST (dimensionsubgroup_all_bredde.value AS NUMERIC ) AS TEXT),',') ,
+                        string_agg(dimensionsubgroup_all_bredde.measurementunit,',') ,
+                        string_agg(CAST (CAST (dimensionsubgroup_all_dybde.value AS NUMERIC ) AS TEXT),',') ,                                
+                        string_agg(dimensionsubgroup_all_dybde.measurementunit,','),
+                        string_agg(CAST (CAST (dimensionsubgroup_all_diameter.value AS NUMERIC ) AS TEXT),',') ,                                
+                        string_agg(dimensionsubgroup_all_diameter.measurementunit,','),
+                        string_agg(CAST (CAST (dimensionsubgroup_all_vaegt.value AS NUMERIC ) AS TEXT),',') ,                                
+                        string_agg(dimensionsubgroup_all_vaegt.measurementunit,',')   
+                ) AS meas_all
+                
+                
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN measuredpartgroup measuredpartgroup_all ON object_hierarchy0.primarytype_id = measuredpartgroup_all.id                                 
+
+                LEFT JOIN public.hierarchy hierarchy_meas_all ON measuredpartgroup_all.id = hierarchy_meas_all.parentid AND hierarchy_meas_all.primarytype = 'dimensionSubGroup'
+
+                LEFT JOIN public.dimensionsubgroup dimensionsubgroup_all_hojde ON hierarchy_meas_all.id = dimensionsubgroup_all_hojde.id AND dimensionsubgroup_all_hojde.dimension = 'hojde'
+                LEFT JOIN public.dimensionsubgroup dimensionsubgroup_all_bredde ON hierarchy_meas_all.id = dimensionsubgroup_all_bredde.id AND dimensionsubgroup_all_bredde.dimension = 'bredde'
+                LEFT JOIN public.dimensionsubgroup dimensionsubgroup_all_dybde ON hierarchy_meas_all.id = dimensionsubgroup_all_dybde.id AND dimensionsubgroup_all_dybde.dimension = 'dybde'
+                LEFT JOIN public.dimensionsubgroup dimensionsubgroup_all_vaegt ON hierarchy_meas_all.id = dimensionsubgroup_all_vaegt.id AND dimensionsubgroup_all_vaegt.dimension = 'vaegt'
+                LEFT JOIN public.dimensionsubgroup dimensionsubgroup_all_diameter ON hierarchy_meas_all.id = dimensionsubgroup_all_diameter.id AND dimensionsubgroup_all_diameter.dimension = 'diameter'
+
+                WHERE object_hierarchy0.primarytype = 'measuredPartGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+
+                GROUP BY
+                        object_hierarchy0.objid,
+                        object_hierarchy0.primarytype_id,
+                        measuredpartgroup_all.measuredpart                
+                
+        ) AS sub_dim   
+        
+        GROUP BY sub_dim.objectid                
+
+) AS meas_all
+
+ON collectionobjects_common.id = meas_all.objectid
+                
+/* - citations-*/
+
+LEFT JOIN(
+
+        SELECT
+        sub_citations.objcsid  AS objectid,
+        string_agg(
+                format('%s;--;%s;--;%s;--;%s;--;%s',
+                        initcap(sub_citations.agent),
+                        sub_citations.title,
+                        initcap(sub_citations.place),
+                        sub_citations.date,
+                        sub_citations.referencenote)
+         , ';-;') AS citations
+         
+         FROM(
+
+                SELECT
+                object_hierarchy0.objid as objcsid,                       
+                string_agg(smkcitationpublicationinfogroup.smkplace, ';--;') AS place,
+                string_agg(smkstructureddatesmkgrouppublication.datesmkdisplaytext, ';--;') AS date,
+                string_agg(citationtermgroup.termtitle, ';--;') AS title,
+                string_agg(citationagentinfogroup.agent, ';--;') AS agent,
+                referencegroup.referencenote AS referencenote                        
+
+                FROM public.object_hierarchy0                
+                LEFT JOIN referencegroup ON object_hierarchy0.primarytype_id = referencegroup.id                                   
+                LEFT JOIN public.citations_common ON citations_common.refname = referencegroup.reference                        
+                LEFT JOIN public.hierarchy hierarchy_citation_group ON hierarchy_citation_group.parentid = citations_common.id
+                
+                /* smkCitationPublicationInfoGroup */
+                LEFT JOIN public.smkcitationpublicationinfogroup ON smkcitationpublicationinfogroup.id = hierarchy_citation_group.id AND hierarchy_citation_group.primarytype = 'smkCitationPublicationInfoGroup'
+                LEFT JOIN public.hierarchy hierarchy_date_publication ON hierarchy_date_publication.parentid = hierarchy_citation_group.id
+                LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgrouppublication ON smkstructureddatesmkgrouppublication.id = hierarchy_date_publication.id
+                
+                /* citationTermGroup */
+                LEFT JOIN public.citationtermgroup ON citationtermgroup.id = hierarchy_citation_group.id AND hierarchy_citation_group.primarytype = 'citationTermGroup'
+                
+                /* citationAgentInfoGroup */
+                LEFT JOIN public.citationagentinfogroup ON citationagentinfogroup.id = hierarchy_citation_group.id AND hierarchy_citation_group.primarytype = 'citationAgentInfoGroup' AND hierarchy_citation_group.pos = 0
+
+                WHERE object_hierarchy0.primarytype = 'referenceGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'
+
+                GROUP BY
+                        object_hierarchy0.objid,
+                        citations_common.id,
+                        referencegroup.referencenote
+                ORDER BY date
+
+            ) AS sub_citations
+        
+        GROUP BY
+                sub_citations.objcsid
+
+) AS citations
+
+ON collectionobjects_common.id = citations.objectid
+
+/* - all type signatures -*/
+        LEFT JOIN(
+
+                SELECT
+                object_hierarchy0.objid AS objectid ,
+                string_agg(
+                        format('%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s',
+                        vocabularyitems_common_signature.displayname,
+                        smktextualinscriptionsmkgroup.smkinscriptioncontentverso,
+                        vocabularyitems_common_signature_position.displayname,
+                        smktextualinscriptionsmkgroup.smkinscriptioncontentmethod,
+                        smktextualinscriptionsmkgroup.smkinscriptioncontent,
+                        smktextualinscriptionsmkgroup.smkinscriptioncontenttranslation,
+                        smktextualinscriptionsmkgroup.smkinscriptioncontentinterpretation,
+                        smkstructureddatesmkgroup.datesmkdisplaytext)
+                 ,';-;')  AS betegnelser_data
+                                  
+                FROM public.object_hierarchy0
+        
+                LEFT JOIN smktextualinscriptionsmkgroup ON object_hierarchy0.primarytype_id = smktextualinscriptionsmkgroup.id                         
+                LEFT JOIN public.vocabularyitems_common vocabularyitems_common_signature ON vocabularyitems_common_signature.refname = smktextualinscriptionsmkgroup.smkinscriptioncontenttype                        
+                LEFT JOIN public.vocabularyitems_common vocabularyitems_common_signature_position ON vocabularyitems_common_signature_position.refname = smktextualinscriptionsmkgroup.smkinscriptioncontentposition                
+                LEFT JOIN public.hierarchy hierarchy_smk_obj_prod_date_group ON smktextualinscriptionsmkgroup.id = hierarchy_smk_obj_prod_date_group.parentid AND hierarchy_smk_obj_prod_date_group.primarytype = 'smkStructuredDateSMKGroup'
+                LEFT JOIN public.smkstructureddatesmkgroup ON smkstructureddatesmkgroup.id = hierarchy_smk_obj_prod_date_group.id
+
+
+                WHERE object_hierarchy0.primarytype = 'smkTextualInscriptionSMKGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}'  
+
+                GROUP BY
+                        object_hierarchy0.objid
+
+        ) AS betegnelser
+
+        ON collectionobjects_common.id = betegnelser.objectid
+
+/* - note til motiv -*/
+        LEFT JOIN(
+
+                SELECT
+
+                object_hierarchy0.objid AS objectid,
+                string_agg(smkcontentnotegroup.smkcontentnote,';-;') AS content_note
+
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN smkcontentnotegroup ON object_hierarchy0.primarytype_id = smkcontentnotegroup.id                         
+
+                WHERE object_hierarchy0.primarytype = 'smkContentNoteGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}' 
+
+                GROUP BY object_hierarchy0.objid
+
+        ) AS contentnote
+
+        ON collectionobjects_common.id = contentnote.objectid
+
+/* - Litteraert forlaeg -*/
+        LEFT JOIN(
+
+                SELECT
+
+                object_hierarchy0.objid AS objectid,
+                string_agg(contenteventnamegroup.contenteventname,';-;') AS litt_references
+
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN contenteventnamegroup ON object_hierarchy0.primarytype_id = contenteventnamegroup.id                     
+
+                WHERE object_hierarchy0.primarytype = 'contentEventNameGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}' 
+
+                GROUP BY object_hierarchy0.objid
+
+        ) AS littref
+
+        ON collectionobjects_common.id = littref.objectid
+
+
+/* - comments -*/
+        LEFT JOIN(
+
+                SELECT
+
+                object_hierarchy0.objid AS objectid,
+                string_agg(smkcomments.smkcommentsnote,';-;') AS comments
+                
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN smkcomments ON object_hierarchy0.primarytype_id = smkcomments.id 
+
+                WHERE object_hierarchy0.primarytype = 'smkComments'                 
+                        AND object_hierarchy0.csid = '${objects.csid}' 
+
+                GROUP BY object_hierarchy0.objid                              
+
+        ) AS comments
+
+        ON collectionobjects_common.id = comments.objectid
+
+/* - note til elementer */
+LEFT JOIN public.vocabularyitems_common vocabularyitems_format ON vocabularyitems_format.refname = collectionobjects_finearts.fadimensionsshape
+
+/* - reference text -*/
+        LEFT JOIN(
+
+                SELECT
+                object_hierarchy0.objid  AS objectid,
+                string_agg(
+                        format('%s;--;%s;--;%s',
+                        vocabularyitems_common_ref_text.displayname,
+                        smkreferencetext,
+                        smkreferencetextlanguage  )
+                 ,';-;') AS reference_text
+                
+                FROM public.object_hierarchy0
+        
+                LEFT JOIN smkreferencetextgroup ON object_hierarchy0.primarytype_id = smkreferencetextgroup.id 
+                LEFT JOIN public.vocabularyitems_common vocabularyitems_common_ref_text ON vocabularyitems_common_ref_text.refname = smkreferencetextgroup.smkreferencetexttype
+                
+                WHERE object_hierarchy0.primarytype = 'smkReferenceTextGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}' 
+
+                GROUP BY 
+                        object_hierarchy0.objid
+                  
+        ) AS reference_text
+
+        ON collectionobjects_common.id = reference_text.objectid
+
+/* - vaerkstatus */
+        LEFT JOIN(
+
+                SELECT
+
+                collectionobjects_common.id AS objectid,
+                string_agg(vocabularyitems_common_status.displayname,';-;') AS vaerkstatus
+
+                FROM public.collectionobjects_common collectionobjects_common
+
+                INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                
+                LEFT JOIN public.collectionobjects_common_objectstatuslist status ON collectionobjects_common.id = status.id                 
+                LEFT JOIN public.vocabularyitems_common vocabularyitems_common_status ON vocabularyitems_common_status.refname = status.item
+
+                WHERE hierarchy0.name = '${objects.csid}'
+
+                GROUP BY objectid
+
+        ) AS vaerkstatus
+
+        ON collectionobjects_common.id = vaerkstatus.objectid  
+
+/* sikkerhedsstatus*/
+        LEFT JOIN(
+        
+                SELECT
+
+                collectionobjects_common.id AS objectid,
+                string_agg(vocabularyitems_common_status.displayname,';-;') AS status
+
+                FROM public.collectionobjects_common collectionobjects_common
+
+                INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                
+                LEFT JOIN public.collectionobjects_finearts_falegalstatuses status ON collectionobjects_common.id = status.id                 
+                LEFT JOIN public.vocabularyitems_common vocabularyitems_common_status ON vocabularyitems_common_status.refname = status.item
+
+                WHERE hierarchy0.name = '${objects.csid}'
+
+                GROUP BY objectid
+        
+        ) AS sikkerhed
+        
+        ON collectionobjects_common.id = sikkerhed.objectid  
+
+/* topografisk motiv */
+        LEFT JOIN(
+        
+                SELECT
+
+                collectionobjects_common.id AS objectid,
+                string_agg(placetermgroup.termdisplayname,';-;') AS topografisk_motiv
+
+                FROM public.collectionobjects_common collectionobjects_common
+
+                INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                
+                LEFT JOIN public.collectionobjects_common_contentplaces contentplaces ON collectionobjects_common.id = contentplaces.id                 
+                LEFT JOIN public.places_common ON places_common.refname = contentplaces.item
+                LEFT JOIN hierarchy hierarchy_places ON hierarchy_places.parentid = places_common.id
+                LEFT JOIN public.placetermgroup ON placetermgroup.id = hierarchy_places.id
+
+                WHERE hierarchy0.name = '${objects.csid}'
+
+                GROUP BY objectid
+
+        ) AS topografisk_motiv
+
+        ON collectionobjects_common.id = topografisk_motiv.objectid  
+        
+/* portraetteret person */
+        LEFT JOIN(
+        
+                SELECT
+
+                collectionobjects_common.id AS objectid,
+                string_agg(persontermgroup.termdisplayname,';-;') AS portrait_person
+
+
+                FROM public.collectionobjects_common collectionobjects_common
+
+                INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                
+                LEFT JOIN public.collectionobjects_common_contentpersons contentpersons ON collectionobjects_common.id = contentpersons.id                 
+                LEFT JOIN public.persons_common ON persons_common.refname = contentpersons.item
+                LEFT JOIN hierarchy hierarchy_persons ON hierarchy_persons.parentid = persons_common.id AND hierarchy_persons.pos = 0
+                LEFT JOIN public.persontermgroup ON persontermgroup.id = hierarchy_persons.id
+
+                WHERE hierarchy0.name = '${objects.csid}'
+                
+
+                GROUP BY objectid
+
+        ) AS portrait_person
+
+        ON collectionobjects_common.id = portrait_person.objectid     
+        
+/* - Ejer-deponent- */   
+        LEFT JOIN(    
+                SELECT
+                
+                collectionobjects_common.id AS objectid,
+                string_agg(org_name.termdisplayname,';-;') AS ejer
+                
+                FROM public.collectionobjects_common collectionobjects_common
+                
+                INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                
+                LEFT JOIN public.collectionobjects_common_owners common_owners ON collectionobjects_common.id = common_owners.id                 
+                LEFT JOIN public.organizations_common org_common ON org_common.refname = common_owners.item
+                LEFT JOIN public.hierarchy hierarchy_org_name ON org_common.id = hierarchy_org_name.parentid AND hierarchy_org_name.primarytype = 'orgTermGroup'
+                LEFT JOIN public.orgtermgroup org_name ON hierarchy_org_name.id = org_name.id
+                
+                WHERE hierarchy0.name = '${objects.csid}'
+                
+                GROUP BY objectid    
+        ) AS ejer
+        
+       ON collectionobjects_common.id = ejer.objectid  
+
+/* - description note (== vaerkstatus note)-*/
+
+        LEFT JOIN(
+
+                SELECT
+
+                object_hierarchy0.objid AS objectid,
+                string_agg(farelatedworklabelgroup.farelatedworklabel,';-;') AS farelatedworklabel
+
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN farelatedworklabelgroup ON object_hierarchy0.primarytype_id = farelatedworklabelgroup.id                 
+                
+                WHERE object_hierarchy0.primarytype = 'faRelatedWorkLabelGroup'                 
+                        AND object_hierarchy0.csid = '${objects.csid}' 
+
+                GROUP BY 
+                        object_hierarchy0.objid
+
+        ) AS farelatedworklabelgroup
+
+        ON collectionobjects_common.id = farelatedworklabelgroup.objectid  
+
+/* Other numbers */
+
+        LEFT JOIN(
+
+                SELECT
+
+                object_hierarchy0.objid AS objectid,
+                string_agg(format('%s;--;%s', vocabularyitems_common_vaerk.displayname, otherNumber.numbervalue), ';-;')  AS other_numbers              
+                
+                FROM public.object_hierarchy0
+                
+                LEFT JOIN othernumber ON object_hierarchy0.primarytype_id = othernumber.id                 
+                LEFT JOIN public.vocabularyitems_common vocabularyitems_common_vaerk ON otherNumber.numbertype = vocabularyitems_common_vaerk.refname 
+                
+                WHERE object_hierarchy0.primarytype = 'otherNumber'                 
+                        AND object_hierarchy0.csid = '${objects.csid}' 
+
+                GROUP BY 
+                        object_hierarchy0.objid
+
+        ) AS other_numbers
+
+        ON collectionobjects_common.id = other_numbers.objectid
+
+/* - insurance currency -*/
+        LEFT JOIN public.vocabularyitems_common vocabularyitems_common_insurance_curr ON vocabularyitems_common_insurance_curr.refname = collectionobjects_smk.smkinsurancevaluecurrency
+
+/* - location -*/
+        LEFT JOIN (
+
+                SELECT
+                location_sub.objectcsid,
+                location_sub.location_date,
+                location_sub.location_name,
+                location_sub.location_note
+
+                FROM public.collectionobjects_common collectionobjects_common
+
+                INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+
+                LEFT JOIN (
+
+                                SELECT
+
+                                relations_common_movement.objectcsid AS objectcsid ,
+                                loc_name.termdisplayname AS location_name,
+                                to_char(movements.locationdate, 'DD-MM-YYYY') AS location_date,
+                                movements.currentlocationnote AS location_note
+
+                                FROM public.relations_common relations_common_movement
+
+                                LEFT JOIN public.hierarchy hierarchy_movement ON relations_common_movement.subjectcsid= hierarchy_movement.name
+                                RIGHT JOIN public.movements_common movements ON hierarchy_movement.id = movements.id AND movements.locationdate IS NOT NULL
+
+                                /* location */
+                                RIGHT JOIN public.locations_common loc_common ON movements.currentlocation = loc_common.refname
+                                LEFT JOIN public.hierarchy hierarchy_loc_name ON loc_common.id = hierarchy_loc_name.parentid AND hierarchy_loc_name.primarytype = 'locTermGroup'
+                                LEFT JOIN public.loctermgroup loc_name ON hierarchy_loc_name.id = loc_name.id
+
+                                INNER JOIN public.misc misc ON (movements.id = misc.id AND misc.lifecyclestate != 'deleted')
+
+                                WHERE 
+                                        relations_common_movement.subjectdocumenttype='Movement' AND 
+                                        relations_common_movement.objectcsid = '${objects.csid}' AND
+                                        movements.movementreferencenumber LIKE 'PL%'
+
+                                GROUP BY 
+                                        relations_common_movement.objectcsid, 
+                                        loc_name.termdisplayname, 
+                                        movements.locationdate,
+                                        movements.currentlocationnote
+
+                        UNION
+
+                                SELECT
+
+                                relations_common_movement.objectcsid AS objectcsid ,
+                                org_name.termdisplayname AS organization_name,
+                                to_char(movements.locationdate, 'DD-MM-YYYY') AS location_date,
+                                movements.currentlocationnote AS location_note
+
+                                FROM public.relations_common relations_common_movement
+
+                                LEFT JOIN public.hierarchy hierarchy_movement ON relations_common_movement.subjectcsid= hierarchy_movement.name
+                                RIGHT JOIN public.movements_common movements ON hierarchy_movement.id = movements.id AND movements.locationdate IS NOT NULL
+
+                                /* organization */
+                                RIGHT JOIN public.organizations_common org_common ON movements.currentlocation = org_common.refname
+                                LEFT JOIN public.hierarchy hierarchy_org_name ON org_common.id = hierarchy_org_name.parentid AND hierarchy_org_name.primarytype = 'orgTermGroup'
+                                LEFT JOIN public.orgtermgroup org_name ON hierarchy_org_name.id = org_name.id
+
+                                INNER JOIN public.misc misc ON (movements.id = misc.id AND misc.lifecyclestate != 'deleted')
+
+                                WHERE 
+                                        relations_common_movement.subjectdocumenttype='Movement' AND 
+                                        relations_common_movement.objectcsid = '${objects.csid}' AND                                        
+                                        movements.movementreferencenumber LIKE 'PL%'
+
+                                GROUP BY 
+                                        relations_common_movement.objectcsid, 
+                                        org_name.termdisplayname, 
+                                        movements.locationdate,
+                                        movements.currentlocationnote
+
+                ) AS location_sub
+
+                ON hierarchy0.name = location_sub.objectcsid
+
+                /* select only the last location / organization date for each object */
+                RIGHT JOIN (
+                        SELECT
+                        to_char(MAX(movements.locationdate), 'DD-MM-YYYY') AS location_date,
+                        relations_common_movement.objectcsid AS objcsid
+
+                        FROM
+                               public.relations_common relations_common_movement
+
+                                LEFT JOIN public.hierarchy hierarchy_movement ON relations_common_movement.subjectcsid = hierarchy_movement.name
+                                LEFT JOIN public.movements_common movements ON hierarchy_movement.id = movements.id
+
+                                INNER JOIN public.misc misc ON (movements.id = misc.id AND misc.lifecyclestate != 'deleted')
+
+                                WHERE 
+                                        relations_common_movement.subjectdocumenttype='Movement' AND 
+                                        relations_common_movement.objectcsid = '${objects.csid}' AND
+                                        movements.movementreferencenumber LIKE 'PL%'
+
+                         GROUP BY  objcsid
+                ) AS last_date
+                ON last_date.objcsid = location_sub.objectcsid AND last_date.location_date = location_sub.location_date
+
+                WHERE hierarchy0.name = '${objects.csid}'
+
+        ) AS location
+
+        ON hierarchy0.name = location.objectcsid
+
+/* - media -*/
+        LEFT JOIN (
+
+                SELECT
+
+                relations_common_media.objectcsid AS objectcsid,
+                array_agg(media_common.externalurl) AS externalurl
+
+                FROM public.relations_common relations_common_media
+
+                LEFT JOIN public.hierarchy hierarchy_media_2 ON relations_common_media.subjectcsid= hierarchy_media_2.name
+                RIGHT JOIN public.misc miscmedia ON miscmedia.lifecyclestate != 'deleted' AND hierarchy_media_2.id= miscmedia.id
+                RIGHT JOIN public.media_common media_common ON hierarchy_media_2.id= media_common.id 
+
+                WHERE 
+                        relations_common_media.subjectdocumenttype='Media' 
+                        AND relations_common_media.objectcsid = '${objects.csid}'
+
+                GROUP BY relations_common_media.objectcsid
+
+        ) AS media
+
+        ON hierarchy0.name = media.objectcsid
+
+/* - related works' titles -*/
+        LEFT JOIN (
+
+                SELECT
+
+                relations_common_related.objectcsid AS objectcsid,
+                string_agg(
+                        format('%s;--;%s', 
+                                smktitle, 
+                                related_object.objectnumber) 
+                 ,';-;')AS title_dk
+
+                FROM public.relations_common relations_common_related
+
+                LEFT JOIN public.hierarchy hierarchy_related ON relations_common_related.subjectcsid= hierarchy_related.name 
+                LEFT JOIN public.collectionobjects_common related_object ON related_object.id = hierarchy_related.id
+                LEFT JOIN public.hierarchy hierarchy_title ON related_object.id = hierarchy_title.parentid 
+                        AND hierarchy_title.primarytype = 'smkTitleGroup' 
+                        AND hierarchy_title.pos = 0
+                LEFT JOIN public.smktitlegroup smktitlegroup ON smktitlegroup.id = hierarchy_title.id 
+
+                WHERE
+                        relations_common_related.subjectdocumenttype='CollectionObject'
+                        AND relations_common_related.relationshiptype='affects'
+                        AND relations_common_related.objectcsid = '${objects.csid}'
+
+                GROUP BY relations_common_related.objectcsid
+
+        ) AS related_work
+
+        ON hierarchy0.name = related_work.objectcsid
+
+/* - multiple works -*/
+        LEFT JOIN (
+
+                SELECT
+
+                sub_multi_work.objectcsid AS objectcsid,
+                string_agg(sub_multi_work.multi_work_ref,';-;') AS multi_work_ref
+
+                FROM(
+
+                        SELECT
+
+                        relations_common_related.objectcsid AS objectcsid,
+                        format('%s;--;%s',
+                                        smktitlegroup.smktitle,
+                                        related_object.objectnumber) AS multi_work_ref
+
+                        FROM public.relations_common relations_common_related
+
+                        LEFT JOIN public.hierarchy hierarchy_related ON relations_common_related.subjectcsid= hierarchy_related.name
+                        LEFT JOIN public.collectionobjects_common related_object ON related_object.id = hierarchy_related.id
+                        LEFT JOIN public.hierarchy hierarchy_title ON related_object.id = hierarchy_title.parentid 
+                                AND hierarchy_title.primarytype = 'smkTitleGroup'  
+                                AND hierarchy_title.pos = 0
+                        LEFT JOIN public.smktitlegroup smktitlegroup ON smktitlegroup.id = hierarchy_title.id
+
+                        WHERE
+                                relations_common_related.subjectdocumenttype = 'CollectionObject'
+                                AND relations_common_related.relationshiptype='hasBroader'
+                                AND relations_common_related.objectcsid = '${objects.csid}'
+
+                       GROUP BY
+                                relations_common_related.objectcsid,
+                                related_object.objectnumber,
+                                smktitlegroup.smktitle
+
+                       ORDER BY CAST(split_part(related_object.objectnumber, '/', 2) AS TEXT)
+
+                ) AS sub_multi_work
+
+                GROUP BY sub_multi_work.objectcsid
+
+        ) AS multi_work
+
+        ON hierarchy0.name = multi_work.objectcsid
+
+/* - related exhibitions -*/
+        LEFT JOIN (
+
+                 SELECT
+                         objectcsid,
+                         string_agg(exhibitionvenue,';-;') AS exhibitionvenue
+
+                         FROM
+                            (
+                                SELECT
+
+                                sub_sub_exhib.objectcsid AS objectcsid,
+                                format('%s;--;%s;--;%s;--;%s',
+                                exhibitiontitle,
+                                sub_sub_exhib.place,
+                                sub_sub_exhib.start_date_text,
+                                sub_sub_exhib.end_date_text ) AS exhibitionvenue
+
+                                FROM(
+
+                                                SELECT
+                                                                /*exhibitions (location)*/
+                                                                relations_common_exhibition.objectcsid AS objectcsid,
+                                                                exhibitiontitle,
+                                                                loctermgroup.termdisplayname AS place,
+                                                                smkstructureddatesmkgroup_exhib_start.datesmkdisplaytext AS start_date_text,
+                                                                smkstructureddatesmkgroup_exhib_end.datesmkdisplaytext AS end_date_text,
+                                                                smkstructureddatesmkgroup_exhib_start.datesmkearliestscalarvalue AS start_date
+
+                                                                FROM public.relations_common relations_common_exhibition
+
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib ON relations_common_exhibition.subjectcsid= hierarchy_exhib.name
+                                                                LEFT JOIN public.exhibitions_common exhibitions_common ON hierarchy_exhib.id= exhibitions_common.id
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_group ON hierarchy_exhib_group.parentid = exhibitions_common.id
+
+                                                                /*date from*/
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_date_from ON hierarchy_exhib_date_from.parentid = hierarchy_exhib_group.id AND hierarchy_exhib_date_from.name = 'smkExhibitionDateFrom'
+                                                                LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgroup_exhib_start ON smkstructureddatesmkgroup_exhib_start.id = hierarchy_exhib_date_from.id
+
+                                                                /*date to*/
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_date_to ON hierarchy_exhib_date_to.parentid = hierarchy_exhib_group.id AND hierarchy_exhib_date_to.name = 'smkExhibitionDateTo'
+                                                                LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgroup_exhib_end ON smkstructureddatesmkgroup_exhib_end.id = hierarchy_exhib_date_to.id
+
+                                                                /*venue (location)*/
+                                                                LEFT JOIN public.smkexhibitionvenuegroup smkexhibitionvenuegroup ON smkexhibitionvenuegroup.id = hierarchy_exhib_group.id
+                                                                RIGHT JOIN public.locations_common locations_common ON locations_common.refname = smkexhibitionvenuegroup.smkexhibitionvenue
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_venue_group ON hierarchy_exhib_venue_group.id = locations_common.id AND hierarchy_exhib_venue_group.primarytype = 'Locationitem'
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_venue ON hierarchy_exhib_venue_group.id = hierarchy_exhib_venue.parentid AND hierarchy_exhib_venue.primarytype='locTermGroup'
+                                                                LEFT JOIN public.loctermgroup loctermgroup ON hierarchy_exhib_venue.id = loctermgroup.id
+
+                                                                WHERE relations_common_exhibition.subjectdocumenttype='Exhibition' 
+                                                                AND relations_common_exhibition.objectcsid = '${objects.csid}'
+
+                                                                GROUP BY
+                                                                        relations_common_exhibition.objectcsid,
+                                                                        exhibitions_common.id,
+                                                                        loctermgroup.termdisplayname,
+                                                                        smkstructureddatesmkgroup_exhib_start.datesmkdisplaytext,
+                                                                        smkstructureddatesmkgroup_exhib_end.datesmkdisplaytext,
+                                                                        smkstructureddatesmkgroup_exhib_start.datesmkearliestscalarvalue
+
+                                                        UNION
+
+                                                                /*exhibitions (organization)*/
+                                                                SELECT
+
+                                                                relations_common_exhibition.objectcsid AS objectcsid,
+                                                                exhibitiontitle,
+                                                                orgtermgroup.termdisplayname AS place,
+                                                                smkstructureddatesmkgroup_exhib_start.datesmkdisplaytext AS start_date_text,
+                                                                smkstructureddatesmkgroup_exhib_end.datesmkdisplaytext AS end_date_text,
+                                                                smkstructureddatesmkgroup_exhib_start.datesmkearliestscalarvalue AS start_date
+
+                                                                FROM public.relations_common relations_common_exhibition
+
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib ON relations_common_exhibition.subjectcsid= hierarchy_exhib.name
+                                                                LEFT JOIN public.exhibitions_common exhibitions_common ON hierarchy_exhib.id= exhibitions_common.id
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_group ON hierarchy_exhib_group.parentid = exhibitions_common.id
+
+                                                                /*date from*/
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_date_from ON hierarchy_exhib_date_from.parentid = hierarchy_exhib_group.id AND hierarchy_exhib_date_from.name = 'smkExhibitionDateFrom'
+                                                                LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgroup_exhib_start ON smkstructureddatesmkgroup_exhib_start.id = hierarchy_exhib_date_from.id
+
+                                                                /*date to*/
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_date_to ON hierarchy_exhib_date_to.parentid = hierarchy_exhib_group.id AND hierarchy_exhib_date_to.name = 'smkExhibitionDateTo'
+                                                                LEFT JOIN public.smkstructureddatesmkgroup smkstructureddatesmkgroup_exhib_end ON smkstructureddatesmkgroup_exhib_end.id = hierarchy_exhib_date_to.id
+
+                                                                /*venue (organization)*/
+                                                                LEFT JOIN public.smkexhibitionvenuegroup smkexhibitionvenuegroup ON smkexhibitionvenuegroup.id = hierarchy_exhib_group.id
+                                                                RIGHT JOIN public.organizations_common organizations_common ON organizations_common.refname = smkexhibitionvenuegroup.smkexhibitionvenue
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_venue_org_group ON hierarchy_exhib_venue_org_group.id = organizations_common.id AND hierarchy_exhib_venue_org_group.primarytype = 'OrganizationTenant5'
+                                                                LEFT JOIN public.hierarchy hierarchy_exhib_venue_org ON hierarchy_exhib_venue_org_group.id = hierarchy_exhib_venue_org.parentid AND hierarchy_exhib_venue_org.primarytype='orgTermGroup'
+                                                                LEFT JOIN public.orgtermgroup orgtermgroup ON hierarchy_exhib_venue_org.id = orgtermgroup.id
+
+                                                                WHERE relations_common_exhibition.subjectdocumenttype='Exhibition' 
+                                                                AND relations_common_exhibition.objectcsid = '${objects.csid}'
+
+                                                                GROUP BY
+                                                                        relations_common_exhibition.objectcsid,
+                                                                        exhibitions_common.id, exhibitiontitle,
+                                                                        orgtermgroup.termdisplayname,
+                                                                        smkstructureddatesmkgroup_exhib_start.datesmkdisplaytext,
+                                                                        smkstructureddatesmkgroup_exhib_end.datesmkdisplaytext,
+                                                                        smkstructureddatesmkgroup_exhib_start.datesmkearliestscalarvalue
+                                        ) AS sub_sub_exhib
+
+                                GROUP BY
+                                        sub_sub_exhib.objectcsid,
+                                        exhibitiontitle,
+                                        sub_sub_exhib.place,
+                                        sub_sub_exhib.start_date_text,
+                                        sub_sub_exhib.end_date_text,
+                                        sub_sub_exhib.start_date
+
+                                ORDER BY sub_sub_exhib.start_date ASC
+                           )
+                        AS sub_exhibitions
+
+                        GROUP BY  sub_exhibitions.objectcsid
+
+        )
+        AS exhibitions
+
+        ON hierarchy0.name = exhibitions.objectcsid
+
+/* verifies that the objet is available*/
+INNER JOIN public.collectionspace_core core ON core.id = collectionobjects_common.id
+INNER JOIN public.misc misc ON misc.id = collectionobjects_common.id
+
+WHERE core.tenantid = 5 AND misc.lifecyclestate != 'deleted' 
+AND hierarchy0.name = '${objects.csid}'
+
+GROUP BY
+
+                acquisitions_common.originalobjectpurchasepricevalue    ,
+                acquisitions_common.grouppurchasepricevalue,
+                acquisitions_common.acquisitionnote  ,
+                acquisitions_smk.smkacquistionsource   ,
+                acquisitions_common.acquisitionreason ,
+                
+                betegnelser.betegnelser_data ,
+                
+                collectionobjects_common.numberofobjects,
+                citations.citations,
+                collectionobjects_common.objectnumber,
+                collectionobjects_common.id,
+                collectionobjects_common.physicaldescription,
+                concepttermgroup.termdisplayname  ,
+                collectionobjects_smk.smkinsurancedate  ,
+                collectionobjects_smk.smkinsurancevalue  ,
+                collectionobjects_smk.smksupport,
+                collectionobjects_smk.smkposter,
+                collectionobjects_smk.smkpostcard,
+                collectionobjects_smk.smkmicroclimateframe,
+                comments.comments ,
+                contentnote.content_note  ,
+                collectionobjects_finearts.faorientationremarks,
+                collectionobjects_finearts.faorientationdescription,
+                collectionobjects_finearts.famoulder,
+                collectionobjects_finearts.fawatermark,               
+                collectionobjects_finearts.fastatedescription, 
+                collectionobjects_finearts.facopyrightstatement, 
+                core.updatedat,             
+
+                ejer.ejer,
+                exhibitions.exhibitionvenue  ,
+
+                faproductiontechniquegroup.faproductiontechnique   ,
+                farelatedworklabelgroup.farelatedworklabel    ,
+
+                hierarchy0.name,
+
+                littref.litt_references  ,
+                location.location_date ,
+                location.location_name  ,
+                location.location_note ,
+
+                materiale.materiale,
+                media.externalurl ,
+                meas_all.meas_all,
+
+                multi_work.multi_work_ref,
+
+                objectproductionnote.objectproductionnote ,
+                objbriefdescriptions.objbriefdescriptions ,
+                objectophavsbeskrivelse.objectophavsbeskrivelse,
+                other_numbers.other_numbers,
+                object_all_production_dates.production_dates ,
+                object_all_production_dates.datesmkearliestscalarvalue,
+				object_all_production_dates.datesmklatestscalarvalue,
+                
+                proveniens.proveniens   ,
+                portrait_person.portrait_person,
+                producent.producents_data,
+                production_place.production_place,
+
+                related_work.title_dk,
+                reference_text.reference_text    ,
+                
+                shape.displayname,
+                smkstructureddatesmkgroup_obj_acq_date.datesmkdisplaytext ,
+                smkstructureddatesmkgroup_obj_acq_date.datesmkdisplayengtext,
+                smkstructureddatesmkgroup_obj_acq_date.datesmkearliestscalarvalue,
+				smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue,	
+                sikkerhed.status,
+
+                title_all.title_all,
+                techniquearticle.techniquearticle,
+                topografisk_motiv,
+
+                vocabularyitems_common_purch_curr.displayname   ,
+                vocabularyitems_common_group_purch_curr.displayname   ,
+                vocabularyitems_common_acq.displayname    ,
+                vocabularyitems_common_insurance_curr.displayname,
+                vocabularyitems_format.displayname,
+                vaerkstatus.vaerkstatus
+
+ORDER BY collectionobjects_common.objectnumber                                
+            
+                     
+            
+            "                    
+
+			    transformer="RegexTransformer,                                     
+                  script:process_capitalize,                                   
+                  script:concat_citation, 
+                  script:concat_exhibition, 
+                  script:concat_reference,
+                  script:process_titles,
+                  script:process_production_place,
+                  script:process_production_date,
+                  script:process_producents,
+                  script:process_techniques,
+                  script:process_dimensions,
+                  script:process_inscriptions,
+                  script:process_multi_works,
+                  script:process_other_numbers,
+                  script:process_related_works,
+                  script:process_materiale,                  
+                  script:process_acquisition" 
+              
+          ></entity>
+          
+     </entity>              
+	</document>	
+</dataConfig>
