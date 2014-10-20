@@ -155,7 +155,7 @@
 <field name="insur_date" type="string" indexed="true" stored="true"/>
 <field name="insur_value" type="string" indexed="true" stored="true"/>
 <field name="litt_references" type="string" indexed="true" stored="true"/>
-<field name="last_update" type="string" indexed="true" stored="true"/>
+<field name="last_update" type="date" indexed="true" stored="true"/>
 <field name="location_date" type="string" indexed="true" stored="true"/>
 <field name="location_kks_kas" type="string" indexed="true" stored="true"/>
 <field name="location_name" type="string" indexed="true" stored="true"/>
