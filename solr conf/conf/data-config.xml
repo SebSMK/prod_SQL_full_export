@@ -2116,6 +2116,8 @@ LEFT JOIN public.vocabularyitems_common vocabularyitems_format ON vocabularyitem
 /* - multiple works -*/
         LEFT JOIN (
 
+        
+        
                 SELECT
 
                 sub_multi_work.objectcsid AS objectcsid,
@@ -2125,35 +2127,104 @@ LEFT JOIN public.vocabularyitems_common vocabularyitems_format ON vocabularyitem
 
                         SELECT
 
-                        relations_common_related.objectcsid AS objectcsid,
-                        format('%s;--;%s',
-                                        smktitlegroup.smktitle,
-                                        related_object.objectnumber) AS multi_work_ref
+                        relations_common_related.reference_point AS objectcsid,                      
+                        format('%s;--;%s;--;%s',                                
+                                smktitlegroup.smktitle,
+                                related_object.objectnumber,
+                                relations_common_related.relation_type                                
+                         )
+                        AS multi_work_ref
 
-                        FROM public.relations_common relations_common_related
+                        FROM (
+                                        SELECT
+                                        CAST('parent' AS TEXT) AS relation_type,
+                                        parents.objectcsid AS related_objects,
+                                        parents.subjectcsid AS reference_point,
+                                        parents.objectrefname AS refname
+                                        
+                                        FROM public.relations_common parents
+                                        
+                                        WHERE
+                                                parents.subjectdocumenttype = 'CollectionObject'
+                                                AND parents.relationshiptype = 'hasBroader'
+                                                AND parents.subjectcsid IS NOT NULL                                        
+                                                AND parents.subjectcsid = '${objects.csid}'
+                                
+                                UNION
+                                
+                                
+                                        SELECT
+                                        CAST('child' AS TEXT) AS relation_type,
+                                        children.subjectcsid AS related_objects,
+                                        children.objectcsid AS reference_point,
+                                        children.subjectrefname AS refname
+                                        
+                                
+                                        FROM public.relations_common children                        
+                                       
+                                        WHERE
+                                                children.subjectdocumenttype = 'CollectionObject'
+                                                AND children.relationshiptype = 'hasBroader'
+                                                AND children.objectcsid IS NOT NULL
+                                                AND children.objectcsid = '${objects.csid}'
+                                
+                                UNION
+                                
+                                        SELECT
+                                        CAST('sibling' AS TEXT) AS relation_type,        
+                                        siblings.related_objects,
+                                        parents.subjectcsid AS reference_point,
+                                        siblings.refname 
+                                        
+                                        FROM public.relations_common parents
+                                        
+                                        LEFT JOIN(
+                                        
+                                                        SELECT
+                                
+                                                        children.subjectcsid AS related_objects,
+                                                        children.subjectrefname AS refname,
+                                                        children.objectcsid                         
+                                
+                                                        FROM public.relations_common children                        
+                                                       
+                                                        WHERE
+                                                                children.subjectdocumenttype = 'CollectionObject'
+                                                                AND children.relationshiptype = 'hasBroader'
+                                                                AND children.objectcsid IS NOT NULL
+                                                
+                                        ) AS siblings
+                                        ON siblings.objectcsid = parents.objectcsid
+                                        
+                                        WHERE
+                                                parents.subjectdocumenttype = 'CollectionObject'
+                                                AND parents.relationshiptype = 'hasBroader'
+                                                AND parents.subjectcsid IS NOT NULL
+                                                AND parents.subjectcsid = '${objects.csid}'
+                        
+                        ) 
+                        
+                        AS relations_common_related
 
-                        LEFT JOIN public.hierarchy hierarchy_related ON relations_common_related.subjectcsid= hierarchy_related.name
+                        LEFT JOIN public.hierarchy hierarchy_related ON relations_common_related.related_objects= hierarchy_related.name
                         LEFT JOIN public.collectionobjects_common related_object ON related_object.id = hierarchy_related.id
                         LEFT JOIN public.hierarchy hierarchy_title ON related_object.id = hierarchy_title.parentid 
                                 AND hierarchy_title.primarytype = 'smkTitleGroup'  
                                 AND hierarchy_title.pos = 0
                         LEFT JOIN public.smktitlegroup smktitlegroup ON smktitlegroup.id = hierarchy_title.id
 
-                        WHERE
-                                relations_common_related.subjectdocumenttype = 'CollectionObject'
-                                AND relations_common_related.relationshiptype='hasBroader'
-                                AND relations_common_related.objectcsid = '${objects.csid}'
-
-                       GROUP BY
-                                relations_common_related.objectcsid,
+                        GROUP BY
+                                relations_common_related.reference_point,
+                                relations_common_related.relation_type,
                                 related_object.objectnumber,
                                 smktitlegroup.smktitle
-
-                       ORDER BY CAST(split_part(related_object.objectnumber, '/', 2) AS TEXT)
-
+                        
+                        ORDER BY CAST(split_part(related_object.objectnumber, '/', 2) AS TEXT)
+                        
                 ) AS sub_multi_work
 
                 GROUP BY sub_multi_work.objectcsid
+
 
         ) AS multi_work
 
@@ -2376,7 +2447,7 @@ GROUP BY
                 vocabularyitems_format.displayname,
                 vaerkstatus.vaerkstatus
 
-ORDER BY collectionobjects_common.objectnumber                                
+ORDER BY collectionobjects_common.objectnumber                                      
             
                      
             
@@ -2390,9 +2461,7 @@ ORDER BY collectionobjects_common.objectnumber
                   script:process_techniques,
                   script:process_dimensions,
                   script:process_inscriptions,
-                  script:process_multi_works,
                   script:process_other_numbers,
-                  script:process_related_works,
                   script:process_materiale,                  
                   script:process_acquisition" 
               
