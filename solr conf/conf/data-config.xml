@@ -1165,35 +1165,47 @@ INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarc
              
          /* object - all production dates */
         LEFT JOIN(
-
                 SELECT
-
-                object_hierarchy0.objid AS objectid,
-                string_agg(
-                        format('%s;--;%s;--;%s;--;%s;--;%s',                                                         
-                                voc_qual.displayname,
-                                smkstructureddatesmkgroup_obj_prod_date.datesmkdisplaytext,
-                                smkstructureddatesmkgroup_obj_prod_date.datesmkearliestscalarvalue,
-                                smkstructureddatesmkgroup_obj_prod_date.datesmklatestscalarvalue,
-                                smkstructureddatesmkgroup_obj_prod_date.datesmkdisplayengtext) 
-                 ,';-;') AS production_dates,
-                 smkstructureddatesmkgroup_obj_prod_date.datesmkearliestscalarvalue,
-                 smkstructureddatesmkgroup_obj_prod_date.datesmklatestscalarvalue
-
-                FROM public.object_hierarchy0
+                 objectid,
+                 string_agg(sub_proddate.production_dates,';-;') AS production_dates,
+                 MIN(datesmkearliestscalarvalue) AS datesmkearliestscalarvalue,
+                 MAX(datesmklatestscalarvalue) AS datesmklatestscalarvalue
                 
-                LEFT JOIN smkobjectproductiondategroup ON object_hierarchy0.primarytype_id = smkobjectproductiondategroup.id 
-                LEFT JOIN hierarchy hierarchy_smk_obj_prod_date ON smkobjectproductiondategroup.id = hierarchy_smk_obj_prod_date.parentid AND hierarchy_smk_obj_prod_date.name = 'smkObjectProductionDate'
-                LEFT JOIN smkstructureddatesmkgroup smkstructureddatesmkgroup_obj_prod_date ON smkstructureddatesmkgroup_obj_prod_date.id = hierarchy_smk_obj_prod_date.id
-                LEFT JOIN vocabularyitems_common voc_qual ON voc_qual.refname = smkobjectproductiondategroup.smkobjectproductiondatequalifier
-        
-                WHERE object_hierarchy0.primarytype = 'smkObjectProductionDateGroup'                 
-                        AND object_hierarchy0.csid = '${objects.csid}'  
+                 FROM(
+                        SELECT
 
-                GROUP BY
-                        object_hierarchy0.objid,
-                        smkstructureddatesmkgroup_obj_prod_date.datesmkearliestscalarvalue,
-                 		smkstructureddatesmkgroup_obj_prod_date.datesmklatestscalarvalue
+                        object_hierarchy0.objid AS objectid,
+                        string_agg(
+                                format('%s;--;%s;--;%s;--;%s;--;%s',                                                         
+                                        voc_qual.displayname,
+                                        smkstructureddatesmkgroup_obj_prod_date.datesmkdisplaytext,
+                                        smkstructureddatesmkgroup_obj_prod_date.datesmkearliestscalarvalue,
+                                        smkstructureddatesmkgroup_obj_prod_date.datesmklatestscalarvalue,
+                                        smkstructureddatesmkgroup_obj_prod_date.datesmkdisplayengtext) 
+                         ,';-;') AS production_dates,
+                         smkstructureddatesmkgroup_obj_prod_date.datesmkearliestscalarvalue,
+                         smkstructureddatesmkgroup_obj_prod_date.datesmklatestscalarvalue
+        
+                        FROM public.object_hierarchy0
+                        
+                        LEFT JOIN smkobjectproductiondategroup ON object_hierarchy0.primarytype_id = smkobjectproductiondategroup.id 
+                        LEFT JOIN hierarchy hierarchy_smk_obj_prod_date ON smkobjectproductiondategroup.id = hierarchy_smk_obj_prod_date.parentid AND hierarchy_smk_obj_prod_date.name = 'smkObjectProductionDate'
+                        LEFT JOIN smkstructureddatesmkgroup smkstructureddatesmkgroup_obj_prod_date ON smkstructureddatesmkgroup_obj_prod_date.id = hierarchy_smk_obj_prod_date.id
+                        LEFT JOIN vocabularyitems_common voc_qual ON voc_qual.refname = smkobjectproductiondategroup.smkobjectproductiondatequalifier
+                
+                        WHERE object_hierarchy0.primarytype = 'smkObjectProductionDateGroup'                 
+                                AND object_hierarchy0.csid = '${objects.csid}'  
+        
+                        GROUP BY
+                                object_hierarchy0.objid,
+                                smkstructureddatesmkgroup_obj_prod_date.datesmkearliestscalarvalue,
+                                        smkstructureddatesmkgroup_obj_prod_date.datesmklatestscalarvalue
+                 
+                 ) AS sub_proddate
+                 
+                 GROUP BY objectid
+
+                
 
         ) AS object_all_production_dates
 
@@ -1389,7 +1401,7 @@ INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarc
                         object_hierarchy0.objid AS objectid,
                         object_hierarchy0.pos,
                           
-                        format ('orga;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;;--;%s' ,
+                         format ('orga;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;;--;' ,
                                 vocabularyitems_common_art_producent.displayname,
                                 org_name.termdisplayname,
                                 
@@ -2447,7 +2459,7 @@ GROUP BY
                 vocabularyitems_format.displayname,
                 vaerkstatus.vaerkstatus
 
-ORDER BY collectionobjects_common.objectnumber                                      
+ORDER BY collectionobjects_common.objectnumber                                            
             
                      
             
