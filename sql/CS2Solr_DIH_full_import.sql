@@ -1,98 +1,105 @@
-SELECT
+ SELECT
 
-collectionobjects_common.objectnumber                                 AS id,
+collectionobjects_common.objectnumber                                   AS id,
 
-smkstructureddatesmkgroup_obj_acq_date.datesmkdisplaytext             AS acq_date,
+smkstructureddatesmkgroup_obj_acq_date.datesmkdisplaytext               AS acq_date,
 smkstructureddatesmkgroup_obj_acq_date.datesmkearliestscalarvalue	AS acq_date_earliest,
 smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue		AS acq_date_latest,
-smkstructureddatesmkgroup_obj_acq_date.datesmkdisplayengtext          AS acq_date_eng,
-acquisitions_common.acquisitionnote                                   AS acq_note,
-acquisitions_common.acquisitionreason                                 AS acq_reason,
-vocabularyitems_common_acq.displayname                                AS acq_method,
-CAST (acquisitions_common.originalobjectpurchasepricevalue AS TEXT)   AS acq_price,
-vocabularyitems_common_purch_curr.displayname                         AS acq_price_currency,
-CAST (acquisitions_common.grouppurchasepricevalue AS TEXT)            AS acq_samlet_price,
-vocabularyitems_common_group_purch_curr.displayname                   AS acq_samlet_price_currency,
-acquisitions_smk.smkacquistionsource                                  AS acq_source,
+smkstructureddatesmkgroup_obj_acq_date.datesmkdisplayengtext            AS acq_date_eng,
+acquisitions_common.acquisitionnote                                     AS acq_note,
+acquisitions_common.acquisitionreason                                   AS acq_reason,
+vocabularyitems_common_acq.displayname                                  AS acq_method,
+CAST (acquisitions_common.originalobjectpurchasepricevalue AS TEXT)     AS acq_price,
+vocabularyitems_common_purch_curr.displayname                           AS acq_price_currency,
+CAST (acquisitions_common.grouppurchasepricevalue AS TEXT)              AS acq_samlet_price,
+vocabularyitems_common_group_purch_curr.displayname                     AS acq_samlet_price_currency,
+acquisitions_smk.smkacquistionsource                                    AS acq_source,
 
-collectionobjects_smk.smksupport                                      AS bagklaedning,
+collectionobjects_smk.smksupport                                        AS bagklaedning,
 
-citations.citations                                                   AS citations,
-hierarchy0.name                                                       AS csid,  
-contentnote.content_note                                              AS content_notes,
-comments.comments                                                     AS comments,
-collectionobjects_finearts.facopyrightstatement                       AS copyright,
+citations.citations                                                     AS citations,
+hierarchy0.name                                                         AS csid,  
+collection.displayname                                                  AS collection,
 
-farelatedworklabelgroup.farelatedworklabel                            AS description_note,
-collectionobjects_common.distinguishingfeatures                       AS distinguishingfeatures,
+contentnote.content_note                                                AS content_notes,
+comments.comments                                                       AS comments,
+collectionobjects_finearts.facopyrightstatement                         AS copyright,
 
-ejer.ejer                                                             AS ejer,
-exhibitions.exhibitionvenue                                           AS exhibitionvenues,
-array_to_string(media.externalurl,',')                                AS externalurl,
+farelatedworklabelgroup.farelatedworklabel                              AS description_note,
+collectionobjects_common.distinguishingfeatures                         AS distinguishingfeatures,
 
-vocabularyitems_format.displayname                                    AS form,
-collectionobjects_finearts.famoulder                                  AS formeri,
+ejer.ejer                                                               AS ejer,
+exhibitions.exhibitionvenue                                             AS exhibitionvenues,
+array_to_string(media.externalurl,',')                                  AS externalurl,
 
-betegnelser.betegnelser_data                                          AS inscription_data,
-collectionobjects_smk.smkinsurancedate                                AS insur_date,
-collectionobjects_smk.smkinsurancevalue                               AS insur_value,
-vocabularyitems_common_insurance_curr.displayname                     AS insur_curr,
+vocabularyitems_format.displayname                                      AS form,
+collectionobjects_finearts.famoulder                                    AS formeri,
 
-littref.litt_references                                               AS litt_references,
-location.location_date                                                AS location_date,
-location.location_name                                                AS location_name,
-location.location_note                                                AS location_note,
-collectionobjects_common.copynumber                                   AS location_kks_kas,
-core.updatedat                                                        AS last_update,
+betegnelser.betegnelser_data                                            AS inscription_data,
+collectionobjects_smk.smkinsurancedate                                  AS insur_date,
+collectionobjects_smk.smkinsurancevalue                                 AS insur_value,
+vocabularyitems_common_insurance_curr.displayname                       AS insur_curr,
 
-materiale.materiale                                                   AS materiale,
-multi_work.multi_work_ref                                             AS multi_work_ref,
-collectionobjects_common.numberofobjects                              AS numberofobjects,
-meas_all.meas_all                                                     AS meas_all,
-collectionobjects_smk.smkmicroclimateframe                            AS mikroklimaramme,
+littref.litt_references                                                 AS litt_references,
+location.location_date                                                  AS location_date,
+location.location_name                                                  AS location_name,
+location.location_note                                                  AS location_note,
+collectionobjects_common.copynumber                                     AS location_kks_kas,
+core.updatedat                                                          AS last_update,
 
-collectionobjects_finearts.faorientationremarks                       AS note_elementer,
+materiale.materiale                                                     AS materiale,
+multi_work.multi_work_ref                                               AS multi_work_ref,
+collectionobjects_common.numberofobjects                                AS numberofobjects,
+meas_all.meas_all                                                       AS meas_all,
+collectionobjects_smk.smkmicroclimateframe                              AS mikroklimaramme,
 
-collectionobjects_finearts.faorientationdescription                   AS opstilling,
-collectionobjects_common.objectnumber                                 AS objectnumber,
-object_all_production_dates.production_dates                          AS object_all_production_dates,
-object_all_production_dates.datesmkearliestscalarvalue				AS object_production_date_earliest,
-object_all_production_dates.datesmklatestscalarvalue				AS object_production_date_latest,
-objectproductionnote.objectproductionnote                             AS object_production_note,
-production_place.production_place                                     AS object_production_place,
-concepttermgroup.termdisplayname                                      AS object_type,
-objbriefdescriptions.objbriefdescriptions                             AS object_briefdescriptions,
-objectophavsbeskrivelse.objectophavsbeskrivelse                       AS objectophavsbeskrivelse,
-collectionobjects_common.editionnumber                                AS oplag,
-other_numbers.other_numbers                                           AS other_numbers,
+collectionobjects_finearts.faorientationremarks                         AS note_elementer,
 
-faproductiontechniquegroup.faproductiontechnique                      AS prod_technique_all,
-proveniens.proveniens                                                 AS proveniens,
-collectionobjects_common.physicaldescription                          AS physicaldescription,
-portrait_person.portrait_person                                       AS portrait_person,
-collectionobjects_smk.smkposter                                       AS plakat,
-collectionobjects_smk.smkpostcard                                     AS postkort,
-producent.producents_data                                             AS producents_data,
+collectionobjects_finearts.faorientationdescription                     AS opstilling,
+collectionobjects_common.objectnumber                                   AS objectnumber,
+object_all_production_dates.production_dates                            AS object_all_production_dates,
+object_all_production_dates.datesmkearliestscalarvalue			AS object_production_date_earliest,
+object_all_production_dates.datesmklatestscalarvalue			AS object_production_date_latest,
+objectproductionnote.objectproductionnote                               AS object_production_note,
+production_place.production_place                                       AS object_production_place,
+concepttermgroup.termdisplayname                                        AS object_type,
+objbriefdescriptions.objbriefdescriptions                               AS object_briefdescriptions,
+objectophavsbeskrivelse.objectophavsbeskrivelse                         AS objectophavsbeskrivelse,
+collectionobjects_common.distinguishingfeatures                         AS omslag,
+collectionobjects_common.editionnumber                                  AS oplag,
+other_numbers.other_numbers                                             AS other_numbers,
 
-related_work.title_dk                                                 AS related_works_title_dk,
-reference_text.reference_text                                         AS reference_texts,
+faproductiontechniquegroup.faproductiontechnique                        AS prod_technique_all,
+proveniens.proveniens                                                   AS proveniens,
+collectionobjects_common.physicaldescription                            AS physicaldescription,
+portrait_person.portrait_person                                         AS portrait_person,
+collectionobjects_smk.smkposter                                         AS plakat,
+collectionobjects_smk.smkpostcard                                       AS postkort,
+producent.producents_data                                               AS producents_data,
 
-collectionobjects_finearts.fastatedescription                         AS stadium,
-sikkerhed.status                                                      AS sikkerhedstatus,
-shape.displayname                                                     AS shape,
+related_work.title_dk                                                   AS related_works_title_dk,
+reference_text.reference_text                                           AS reference_texts,
 
-title_all.title_all                                                   AS title_all,
-techniquearticle.techniquearticle                                     AS techniquearticle,
-topografisk_motiv                                                     AS topografisk_motiv,
+collectionobjects_finearts.fastatedescription                           AS stadium,
+sikkerhed.status                                                        AS sikkerhedstatus,
+shape.displayname                                                       AS shape,
 
-vaerkstatus.vaerkstatus                                               AS vaerkstatus,
+title_all.title_all                                                     AS title_all,
+techniquearticle.techniquearticle                                       AS techniquearticle,
+topografisk_motiv                                                       AS topografisk_motiv,
 
-collectionobjects_finearts.fawatermark                                AS watermark
+vaerkstatus.vaerkstatus                                                 AS vaerkstatus,
+
+collectionobjects_finearts.fawatermark                                  AS watermark
 
 
 FROM public.collectionobjects_common collectionobjects_common
 
 INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+
+
+/* - collection -*/
+LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.collection = collection.refname
 
 /* - object -*/
         /* object fabrication */
@@ -143,15 +150,16 @@ INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarc
         
         /* objet materiale */
         
-        LEFT JOIN(
-               
+        LEFT JOIN(               
                 SELECT
                 
                 object_hierarchy0.objid AS objid,
                 string_agg(
-                        format('%s;--;%s', 
+                        format('%s;--;%s;--;%s;--;%s', 
                                 concepttermgroup.termdisplayname, 
-                                conceptauthorities_common.displayname) 
+                                conceptauthorities_common.displayname,
+                                type_mat.displayname,
+                                concepttermgroup.termqualifier) 
                  ,';-;')AS materiale
 
                 FROM public.object_hierarchy0
@@ -162,10 +170,10 @@ INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarc
                 LEFT JOIN conceptauthorities_common ON conceptauthorities_common.id = hier_auth.id
                 LEFT JOIN hierarchy hier_concept ON hier_concept.parentid = concepts_common.id
                 LEFT JOIN concepttermgroup ON concepttermgroup.id = hier_concept.id
+                LEFT JOIN vocabularyitems_common type_mat ON famaterialgroup.famaterialrole = type_mat.refname
                         
                 WHERE object_hierarchy0.primarytype = 'faMaterialGroup'                 
-                        AND object_hierarchy0.csid = '${objects.csid}'  
-                        
+                        AND object_hierarchy0.csid = '${objects.csid}'                       
 
                 GROUP BY
                         object_hierarchy0.objid
@@ -331,7 +339,7 @@ INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarc
 
         ) AS objbriefdescriptions
 
-        ON collectionobjects_common.id = objectproductionnote.objectid
+        ON collectionobjects_common.id = objbriefdescriptions.objectid
 
 
         /* object type */
@@ -533,11 +541,12 @@ LEFT JOIN(
                 SELECT
                 object_hierarchy0.objid AS objid,
                 string_agg(                        
-                         format('%s;--;%s;--;%s;--;%s',                                
+                         format('%s;--;%s;--;%s;--;%s;--;%s',                                
                                 smktitlegroup.smktitle,
                                 smktitlegroup.smktitlenote,
                                 smktitlegroup.smktitlelanguage,
-                                title_translate.title_translate),                                        
+                                title_translate.title_translate,
+                                smktitlegroup.smktitletype),                                        
                         ';-;') 
                  AS title_all
 
@@ -555,9 +564,10 @@ LEFT JOIN(
                                         hierarchy_title_translate.parentid,                                                   
                                         
                                         string_agg(
-                                                format('%s;-v;%s',
+                                                format('%s;-v;%s;-v;%s',
                                                 smktitletranslationsubgroup.smktitletranslation,
-                                                smktitletranslationsubgroup.smktitletranslationlanguage
+                                                smktitletranslationsubgroup.smktitletranslationlanguage,
+                                                smktitletranslationsubgroup.smktitletranslationnote
                                                 ),                                        
                                         ';---;')  AS title_translate,
                                         
@@ -1441,6 +1451,7 @@ GROUP BY
                 betegnelser.betegnelser_data ,
                 
                 collectionobjects_common.numberofobjects,
+                collection.displayname,
                 citations.citations,
                 collectionobjects_common.objectnumber,
                 collectionobjects_common.id,
