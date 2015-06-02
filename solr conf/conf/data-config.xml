@@ -264,6 +264,7 @@ object_all_production_dates.datesmklatestscalarvalue			AS object_production_date
 objectproductionnote.objectproductionnote                               AS object_production_note,
 production_place.production_place                                       AS object_production_place,
 concepttermgroup.termdisplayname                                        AS object_type,
+concepttermgroup.termqualifier                                          AS object_type_en,
 objbriefdescriptions.objbriefdescriptions                               AS object_briefdescriptions,
 objectophavsbeskrivelse.objectophavsbeskrivelse                         AS objectophavsbeskrivelse,
 collectionobjects_common.distinguishingfeatures                         AS omslag,
@@ -1657,7 +1658,8 @@ GROUP BY
                 collectionobjects_common.objectnumber,
                 collectionobjects_common.id,
                 collectionobjects_common.physicaldescription,
-                concepttermgroup.termdisplayname  ,
+                concepttermgroup.termdisplayname,
+                concepttermgroup.termqualifier,
                 collectionobjects_smk.smkinsurancedate  ,
                 collectionobjects_smk.smkinsurancevalue  ,
                 collectionobjects_smk.smksupport,
@@ -1727,7 +1729,7 @@ GROUP BY
                 vocabularyitems_format.displayname,
                 vaerkstatus.vaerkstatus
 
-ORDER BY collectionobjects_common.objectnumber                                                
+ORDER BY collectionobjects_common.objectnumber                                                     
             
                      
             

@@ -181,6 +181,7 @@
 <field name="object_production_place_udgivet" type="string" indexed="false" stored="true"/>
 <field name="object_production_place_udfoert" type="string" indexed="false" stored="true"/>
 <field name="object_type" type="string" indexed="false" stored="true"/>
+<field name="object_type_en" type="string" indexed="false" stored="true"/>
 <field name="objectophavsbeskrivelse" type="string" indexed="false" stored="true"/>
 <field name="omslag" type="string" indexed="false" stored="true"/>
 <field name="oplag" type="string" indexed="false" stored="true"/>
