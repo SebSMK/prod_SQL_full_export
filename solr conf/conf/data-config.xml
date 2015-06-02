@@ -197,15 +197,14 @@ GROUP BY csid
         
           <entity 
               name="data" 
-              query="
-
+              query="                                                            
  SELECT
 
 collectionobjects_common.objectnumber                                   AS id,
 
 smkstructureddatesmkgroup_obj_acq_date.datesmkdisplaytext               AS acq_date,
-smkstructureddatesmkgroup_obj_acq_date.datesmkearliestscalarvalue	AS acq_date_earliest,
-smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue		AS acq_date_latest,
+smkstructureddatesmkgroup_obj_acq_date.datesmkearliestscalarvalue	      AS acq_date_earliest,
+smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue		      AS acq_date_latest,
 smkstructureddatesmkgroup_obj_acq_date.datesmkdisplayengtext            AS acq_date_eng,
 acquisitions_common.acquisitionnote                                     AS acq_note,
 acquisitions_common.acquisitionreason                                   AS acq_reason,
@@ -226,6 +225,7 @@ contentnote.content_note                                                AS conte
 comments.comments                                                       AS comments,
 collectionobjects_finearts.facopyrightstatement                         AS copyright,
 
+department.item                                                         AS department, 
 farelatedworklabelgroup.farelatedworklabel                              AS description_note,
 collectionobjects_common.distinguishingfeatures                         AS distinguishingfeatures,
 
@@ -259,8 +259,8 @@ collectionobjects_finearts.faorientationremarks                         AS note_
 collectionobjects_finearts.faorientationdescription                     AS opstilling,
 collectionobjects_common.objectnumber                                   AS objectnumber,
 object_all_production_dates.production_dates                            AS object_all_production_dates,
-object_all_production_dates.datesmkearliestscalarvalue			AS object_production_date_earliest,
-object_all_production_dates.datesmklatestscalarvalue			AS object_production_date_latest,
+object_all_production_dates.datesmkearliestscalarvalue			            AS object_production_date_earliest,
+object_all_production_dates.datesmklatestscalarvalue			              AS object_production_date_latest,
 objectproductionnote.objectproductionnote                               AS object_production_note,
 production_place.production_place                                       AS object_production_place,
 concepttermgroup.termdisplayname                                        AS object_type,
@@ -302,6 +302,9 @@ INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarc
 
 /* - collection -*/
 LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.collection = collection.refname
+
+/* - department -*/
+LEFT JOIN collectionobjects_common_responsibledepartments AS department ON department.id = collectionobjects_common.id
 
 /* - object -*/
         /* object fabrication */
@@ -592,11 +595,11 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
                         object_hierarchy0.objid AS objectid,
                         object_hierarchy0.pos,                                                
                         
-                         format ('person;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s' ,
+                         format ('person;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s' ,
                                                                         
                                 vocabularyitems_common_art_producent.displayname,
                                 
-                                (persontermgroup_producent.termdisplayname),                                                        
+                                persontermgroup_producent.termdisplayname,                                                        
         
                                 smkstructureddatesmkgroup_producent_birth.datesmkthirddateyear,
                                 
@@ -612,7 +615,13 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
         
                                 initcap(vocabularyitems_common_producent.displayname),
                                 
-                                initcap(vocabularyitems_common_producent.description)
+                                initcap(vocabularyitems_common_producent.description),
+                                
+                                persontermgroup_producent.forename,
+                                 
+                                persontermgroup_producent.surname,
+                                  
+                                persontermgroup_producent.middlename
                                                                                                         
                         )
                         AS producents_data
@@ -645,10 +654,12 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
                         GROUP BY
                             objectid,
                             persontermgroup_producent.id,
-                            vocabularyitems_common_art_producent.displayname,
+                            vocabularyitems_common_art_producent.displayname,                                                        
+                            vocabularyitems_common_producent.displayname,
+                            persontermgroup_producent.termdisplayname,
                             persontermgroup_producent.forename,
                             persontermgroup_producent.surname,
-                            vocabularyitems_common_producent.displayname,
+                            persontermgroup_producent.middlename,
                             vocabularyitems_common_producent.description,
                             smkstructureddatesmkgroup_producent_birth.datesmkdisplaytext,
                             smkstructureddatesmkgroup_producent_death.datesmkdisplaytext,
@@ -667,7 +678,7 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
                         object_hierarchy0.objid AS objectid,
                         object_hierarchy0.pos,
                           
-                         format ('orga;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;;--;' ,
+                         format ('orga;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;;--;;--;;--;;--;' ,
                                 vocabularyitems_common_art_producent.displayname,
                                 org_name.termdisplayname,
                                 
@@ -1676,6 +1687,8 @@ GROUP BY
                 collectionobjects_finearts.facopyrightstatement, 
                 core.updatedat,             
 
+                department,
+                
                 ejer.ejer,
                 exhibitions.exhibitionvenue  ,
 
@@ -1701,7 +1714,7 @@ GROUP BY
                 other_numbers.other_numbers,
                 object_all_production_dates.production_dates ,
                 object_all_production_dates.datesmkearliestscalarvalue,
-				object_all_production_dates.datesmklatestscalarvalue,
+				        object_all_production_dates.datesmklatestscalarvalue,
                 
                 proveniens.proveniens   ,
                 portrait_person.portrait_person,
@@ -1715,7 +1728,7 @@ GROUP BY
                 smkstructureddatesmkgroup_obj_acq_date.datesmkdisplaytext ,
                 smkstructureddatesmkgroup_obj_acq_date.datesmkdisplayengtext,
                 smkstructureddatesmkgroup_obj_acq_date.datesmkearliestscalarvalue,
-				smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue,	
+				        smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue,	
                 sikkerhed.status,
 
                 title_all.title_all,
@@ -1729,9 +1742,7 @@ GROUP BY
                 vocabularyitems_format.displayname,
                 vaerkstatus.vaerkstatus
 
-ORDER BY collectionobjects_common.objectnumber                                                     
-            
-                     
+ORDER BY collectionobjects_common.objectnumber                        
             
             "                    
 			    transformer="                                     
