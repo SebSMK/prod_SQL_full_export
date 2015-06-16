@@ -25,6 +25,7 @@ contentnote.content_note                                                AS conte
 comments.comments                                                       AS comments,
 collectionobjects_finearts.facopyrightstatement                         AS copyright,
 
+department.item                                                         AS department, 
 farelatedworklabelgroup.farelatedworklabel                              AS description_note,
 collectionobjects_common.distinguishingfeatures                         AS distinguishingfeatures,
 
@@ -101,6 +102,9 @@ INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarc
 
 /* - collection -*/
 LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.collection = collection.refname
+
+/* - department -*/
+LEFT JOIN collectionobjects_common_responsibledepartments AS department ON department.id = collectionobjects_common.id
 
 /* - object -*/
         /* object fabrication */
@@ -391,11 +395,11 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
                         object_hierarchy0.objid AS objectid,
                         object_hierarchy0.pos,                                                
                         
-                         format ('person;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s' ,
+                         format ('person;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s' ,
                                                                         
                                 vocabularyitems_common_art_producent.displayname,
                                 
-                                (persontermgroup_producent.termdisplayname),                                                        
+                                persontermgroup_producent.termdisplayname,                                                        
         
                                 smkstructureddatesmkgroup_producent_birth.datesmkthirddateyear,
                                 
@@ -411,7 +415,13 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
         
                                 initcap(vocabularyitems_common_producent.displayname),
                                 
-                                initcap(vocabularyitems_common_producent.description)
+                                initcap(vocabularyitems_common_producent.description),
+                                
+                                persontermgroup_producent.forename,
+                                 
+                                persontermgroup_producent.surname,
+                                  
+                                persontermgroup_producent.middlename
                                                                                                         
                         )
                         AS producents_data
@@ -444,10 +454,12 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
                         GROUP BY
                             objectid,
                             persontermgroup_producent.id,
-                            vocabularyitems_common_art_producent.displayname,
+                            vocabularyitems_common_art_producent.displayname,                                                        
+                            vocabularyitems_common_producent.displayname,
+                            persontermgroup_producent.termdisplayname,
                             persontermgroup_producent.forename,
                             persontermgroup_producent.surname,
-                            vocabularyitems_common_producent.displayname,
+                            persontermgroup_producent.middlename,
                             vocabularyitems_common_producent.description,
                             smkstructureddatesmkgroup_producent_birth.datesmkdisplaytext,
                             smkstructureddatesmkgroup_producent_death.datesmkdisplaytext,
@@ -466,7 +478,7 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
                         object_hierarchy0.objid AS objectid,
                         object_hierarchy0.pos,
                           
-                         format ('orga;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;;--;' ,
+                         format ('orga;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;%s;--;;--;;--;;--;;--;' ,
                                 vocabularyitems_common_art_producent.displayname,
                                 org_name.termdisplayname,
                                 
@@ -490,7 +502,7 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
                         LEFT JOIN faobjectproductionpersongroup faobjectproductionpersongroup_producent  ON object_hierarchy0.primarytype_id = faobjectproductionpersongroup_producent.id                                         
 
                         LEFT JOIN public.organizations_common org_common ON org_common.refname = faobjectproductionpersongroup_producent.faobjectproductionperson
-                        LEFT JOIN public.hierarchy hierarchy_org_name ON org_common.id = hierarchy_org_name.parentid AND hierarchy_org_name.primarytype = 'orgTermGroup'
+                        LEFT JOIN public.hierarchy hierarchy_org_name ON org_common.id = hierarchy_org_name.parentid AND hierarchy_org_name.primarytype = 'orgTermGroup' AND hierarchy_org_name.pos = 0
                         LEFT JOIN public.orgtermgroup org_name ON hierarchy_org_name.id = org_name.id
 
                         /*  name  */
@@ -520,7 +532,7 @@ LEFT JOIN vocabularyitems_common AS collection ON collectionobjects_common.colle
                                 smkstructureddatesmkgroup_producent_org_creation.datesmkdisplayengtext,
                                 smkstructureddatesmkgroup_producent_org_dissolution.datesmkdisplayengtext,
                                 smkstructureddatesmkgroup_producent_org_creation.datesmkthirddateyear,
-                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkthirddateyear                                    
+                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkthirddateyear
         
         
         ) AS sub_producent
@@ -931,23 +943,44 @@ LEFT JOIN public.vocabularyitems_common vocabularyitems_format ON vocabularyitem
         
                 SELECT
 
-                collectionobjects_common.id AS objectid,
-                string_agg(persontermgroup.termdisplayname,';-;') AS portrait_person
-
-
-                FROM public.collectionobjects_common collectionobjects_common
-
-                INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                sub_portrait.objectid AS objectid,
+                string_agg(sub_portrait.portrait_person,';-;') AS portrait_person
                 
-                LEFT JOIN public.collectionobjects_common_contentpersons contentpersons ON collectionobjects_common.id = contentpersons.id                 
-                LEFT JOIN public.persons_common ON persons_common.refname = contentpersons.item
-                LEFT JOIN hierarchy hierarchy_persons ON hierarchy_persons.parentid = persons_common.id AND hierarchy_persons.pos = 0
-                LEFT JOIN public.persontermgroup ON persontermgroup.id = hierarchy_persons.id
+                 FROM(                              
+               
+                        SELECT       
+                        collectionobjects_common.id AS objectid,                                             
+                        
+                        format ('%s;--;%s;--;%s;--;%s' ,
+                                                                        
+                                persontermgroup.termdisplayname,                                
+                                persontermgroup.forename,                                 
+                                persontermgroup.surname,                                  
+                                persontermgroup.middlename)
+                                
+                         AS portrait_person
 
-                WHERE hierarchy0.name = '${objects.csid}'
-                
-
-                GROUP BY objectid
+                        FROM public.collectionobjects_common collectionobjects_common
+        
+                        INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                        
+                        LEFT JOIN public.collectionobjects_common_contentpersons contentpersons ON collectionobjects_common.id = contentpersons.id                 
+                        LEFT JOIN public.persons_common ON persons_common.refname = contentpersons.item
+                        LEFT JOIN hierarchy hierarchy_persons ON hierarchy_persons.parentid = persons_common.id AND hierarchy_persons.pos = 0 AND hierarchy_persons.primarytype = 'personTermGroup'
+                        LEFT JOIN public.persontermgroup ON persontermgroup.id = hierarchy_persons.id
+        
+                        WHERE hierarchy0.name = '${objects.csid}'
+                                
+                        GROUP BY 
+                                objectid,
+                                persontermgroup.termdisplayname,                                
+                                persontermgroup.forename,                                 
+                                persontermgroup.surname,                                  
+                                persontermgroup.middlename
+              ) AS sub_portrait
+               
+               GROUP BY 
+                objectid                 
 
         ) AS portrait_person
 
@@ -1475,6 +1508,8 @@ GROUP BY
                 collectionobjects_finearts.facopyrightstatement, 
                 core.updatedat,             
 
+                department,
+                
                 ejer.ejer,
                 exhibitions.exhibitionvenue  ,
 
@@ -1528,4 +1563,4 @@ GROUP BY
                 vocabularyitems_format.displayname,
                 vaerkstatus.vaerkstatus
 
-ORDER BY collectionobjects_common.objectnumber        
+ORDER BY collectionobjects_common.objectnumber    

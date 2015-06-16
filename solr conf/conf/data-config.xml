@@ -203,8 +203,8 @@ GROUP BY csid
 collectionobjects_common.objectnumber                                   AS id,
 
 smkstructureddatesmkgroup_obj_acq_date.datesmkdisplaytext               AS acq_date,
-smkstructureddatesmkgroup_obj_acq_date.datesmkearliestscalarvalue	      AS acq_date_earliest,
-smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue		      AS acq_date_latest,
+smkstructureddatesmkgroup_obj_acq_date.datesmkearliestscalarvalue	AS acq_date_earliest,
+smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue		AS acq_date_latest,
 smkstructureddatesmkgroup_obj_acq_date.datesmkdisplayengtext            AS acq_date_eng,
 acquisitions_common.acquisitionnote                                     AS acq_note,
 acquisitions_common.acquisitionreason                                   AS acq_reason,
@@ -259,8 +259,8 @@ collectionobjects_finearts.faorientationremarks                         AS note_
 collectionobjects_finearts.faorientationdescription                     AS opstilling,
 collectionobjects_common.objectnumber                                   AS objectnumber,
 object_all_production_dates.production_dates                            AS object_all_production_dates,
-object_all_production_dates.datesmkearliestscalarvalue			            AS object_production_date_earliest,
-object_all_production_dates.datesmklatestscalarvalue			              AS object_production_date_latest,
+object_all_production_dates.datesmkearliestscalarvalue			AS object_production_date_earliest,
+object_all_production_dates.datesmklatestscalarvalue			AS object_production_date_latest,
 objectproductionnote.objectproductionnote                               AS object_production_note,
 production_place.production_place                                       AS object_production_place,
 concepttermgroup.termdisplayname                                        AS object_type,
@@ -702,7 +702,7 @@ LEFT JOIN collectionobjects_common_responsibledepartments AS department ON depar
                         LEFT JOIN faobjectproductionpersongroup faobjectproductionpersongroup_producent  ON object_hierarchy0.primarytype_id = faobjectproductionpersongroup_producent.id                                         
 
                         LEFT JOIN public.organizations_common org_common ON org_common.refname = faobjectproductionpersongroup_producent.faobjectproductionperson
-                        LEFT JOIN public.hierarchy hierarchy_org_name ON org_common.id = hierarchy_org_name.parentid AND hierarchy_org_name.primarytype = 'orgTermGroup'
+                        LEFT JOIN public.hierarchy hierarchy_org_name ON org_common.id = hierarchy_org_name.parentid AND hierarchy_org_name.primarytype = 'orgTermGroup' AND hierarchy_org_name.pos = 0
                         LEFT JOIN public.orgtermgroup org_name ON hierarchy_org_name.id = org_name.id
 
                         /*  name  */
@@ -732,7 +732,7 @@ LEFT JOIN collectionobjects_common_responsibledepartments AS department ON depar
                                 smkstructureddatesmkgroup_producent_org_creation.datesmkdisplayengtext,
                                 smkstructureddatesmkgroup_producent_org_dissolution.datesmkdisplayengtext,
                                 smkstructureddatesmkgroup_producent_org_creation.datesmkthirddateyear,
-                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkthirddateyear                                    
+                                smkstructureddatesmkgroup_producent_org_dissolution.datesmkthirddateyear
         
         
         ) AS sub_producent
@@ -1143,23 +1143,44 @@ LEFT JOIN public.vocabularyitems_common vocabularyitems_format ON vocabularyitem
         
                 SELECT
 
-                collectionobjects_common.id AS objectid,
-                string_agg(persontermgroup.termdisplayname,';-;') AS portrait_person
-
-
-                FROM public.collectionobjects_common collectionobjects_common
-
-                INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                sub_portrait.objectid AS objectid,
+                string_agg(sub_portrait.portrait_person,';-;') AS portrait_person
                 
-                LEFT JOIN public.collectionobjects_common_contentpersons contentpersons ON collectionobjects_common.id = contentpersons.id                 
-                LEFT JOIN public.persons_common ON persons_common.refname = contentpersons.item
-                LEFT JOIN hierarchy hierarchy_persons ON hierarchy_persons.parentid = persons_common.id AND hierarchy_persons.pos = 0
-                LEFT JOIN public.persontermgroup ON persontermgroup.id = hierarchy_persons.id
+                 FROM(                              
+               
+                        SELECT       
+                        collectionobjects_common.id AS objectid,                                             
+                        
+                        format ('%s;--;%s;--;%s;--;%s' ,
+                                                                        
+                                persontermgroup.termdisplayname,                                
+                                persontermgroup.forename,                                 
+                                persontermgroup.surname,                                  
+                                persontermgroup.middlename)
+                                
+                         AS portrait_person
 
-                WHERE hierarchy0.name = '${objects.csid}'
-                
-
-                GROUP BY objectid
+                        FROM public.collectionobjects_common collectionobjects_common
+        
+                        INNER JOIN public.hierarchy hierarchy0 ON (collectionobjects_common.id = hierarchy0.id)
+                        
+                        LEFT JOIN public.collectionobjects_common_contentpersons contentpersons ON collectionobjects_common.id = contentpersons.id                 
+                        LEFT JOIN public.persons_common ON persons_common.refname = contentpersons.item
+                        LEFT JOIN hierarchy hierarchy_persons ON hierarchy_persons.parentid = persons_common.id AND hierarchy_persons.pos = 0 AND hierarchy_persons.primarytype = 'personTermGroup'
+                        LEFT JOIN public.persontermgroup ON persontermgroup.id = hierarchy_persons.id
+        
+                        WHERE hierarchy0.name = '${objects.csid}'
+                                
+                        GROUP BY 
+                                objectid,
+                                persontermgroup.termdisplayname,                                
+                                persontermgroup.forename,                                 
+                                persontermgroup.surname,                                  
+                                persontermgroup.middlename
+              ) AS sub_portrait
+               
+               GROUP BY 
+                objectid                 
 
         ) AS portrait_person
 
@@ -1714,7 +1735,7 @@ GROUP BY
                 other_numbers.other_numbers,
                 object_all_production_dates.production_dates ,
                 object_all_production_dates.datesmkearliestscalarvalue,
-				        object_all_production_dates.datesmklatestscalarvalue,
+				object_all_production_dates.datesmklatestscalarvalue,
                 
                 proveniens.proveniens   ,
                 portrait_person.portrait_person,
@@ -1728,7 +1749,7 @@ GROUP BY
                 smkstructureddatesmkgroup_obj_acq_date.datesmkdisplaytext ,
                 smkstructureddatesmkgroup_obj_acq_date.datesmkdisplayengtext,
                 smkstructureddatesmkgroup_obj_acq_date.datesmkearliestscalarvalue,
-				        smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue,	
+				smkstructureddatesmkgroup_obj_acq_date.datesmklatestscalarvalue,	
                 sikkerhed.status,
 
                 title_all.title_all,
