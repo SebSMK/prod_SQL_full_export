@@ -1046,10 +1046,12 @@ LEFT JOIN public.vocabularyitems_common vocabularyitems_format ON vocabularyitem
                 SELECT
                 object_hierarchy0.objid  AS objectid,
                 string_agg(
-                        format('%s;--;%s;--;%s',
+                        format('%s;--;%s;--;%s;--;%s;--;%s',
                         vocabularyitems_common_ref_text.displayname,
                         smkreferencetext,
-                        smkreferencetextlanguage  )
+                        smkreferencetextlanguage,
+                        smkreferencetextauthor,
+                        smkreferencetextdate  )
                  ,';-;') AS reference_text
                 
                 FROM public.object_hierarchy0
